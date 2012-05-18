@@ -1,0 +1,18 @@
+%%-*- mode: erlang -*-
+{application, two-grooves,
+ [
+  {description, "two-grooves"},
+  {vsn, "1"},
+  {modules, []},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib,
+                  inets,
+                  crypto,
+                  mochiweb,
+                  webmachine
+                 ]},
+  {mod, { two-grooves_app, []}},
+  {env, []}
+ ]}.
