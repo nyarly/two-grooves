@@ -1,25 +1,28 @@
 -module(snake_game).
--export([init/0, move/3, score/1]).
+-behavior(gen_server).
+-export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
+-export([start_game/0, see_board/1, make_move/3, get_score/1, quit/1]).
+-define(SIZE_GUARD, X > 0, X =< Wide, Y > 0, Y =< Tall).
 
-init() ->
-  {[], [{gate,{3,4}, {3,5}}, {post, {2,2}}]}.
+setup_board() ->
+  {[], [{gate,{3,4}, {3,5}}, {post, {2,2}}], {5,5}}.
 
-move(X, Y, {[], Board}) ->
-  {[{X,Y}], Board};
-move(X, Y, {Moves = [{X, Yp} | Rest], Board}) when abs(Y - Yp) == 1, length(Moves) < 5 ->
-  {[{X,Y}], Board};
-move(X, Y, {Moves = [{Xp, Y} | Rest], Board}) when abs(X - Xp) == 1, length(Moves) < 5 ->
-  {[{X,Y}], Board};
-move(X, Y, {Moves, Board}) ->
-  {[{X,Y} | Moves], Board}.
+move(X, Y, {[], Board, Dims = {Wide, Tall}}) when ?SIZE_GUARD ->
+  {ok, {[{X,Y}], Board, Dims}};
+move(X, Y, {Moves = [{X, Yp} | _], Board, Dims = {Wide, Tall}}) when ?SIZE_GUARD, abs(Y - Yp) == 1, length(Moves) < 5 ->
+  {ok, {[{X,Y} | Moves], Board, Dims}};
+move(X, Y, {Moves = [{Xp, Y} | _], Board, Dims = {Wide, Tall}}) when ?SIZE_GUARD, abs(X - Xp) == 1, length(Moves) < 5 ->
+  {ok, {[{X,Y} | Moves], Board, Dims}};
+move(_, _, _) ->
+  {error, invalid_move}.
 
 score(State) ->
-  score(State, 0).
+  {ok, score(State, 0)}.
 
-score({_, []}, Score) ->
+score({_, [], _}, Score) ->
   Score;
-score({Moves, [Thing | Board]}, Score) ->
-  score_item(Moves, Thing) + score({Moves, Board}, Score).
+score({Moves, [Thing | Board], Dims}, Score) ->
+  score_item(Moves, Thing) + score({Moves, Board, Dims}, Score).
 
 score_item(Moves, {post, Around}) ->
   score_post(Moves, Around);
@@ -39,7 +42,7 @@ score_item(_, []) ->
 %            CBA DCB ADC BAD
 
 %ABC
-score_post([{Ax, Ay}, {X, By}, {X, Y} | _], {X, Y}) when Ax == (X - 1), Ay == (Y - 1), By == (Y - 1) ->
+score_post([{Ax, Ay}, {X, By}, {X, Y} | _], {X, Y}) when Ax == X - 1, Ay == Y - 1, By == Y - 1 ->
   5;
 %BCD
 score_post([{X, By}, {X, Y}, {Dx, Y} | _], {X, Y}) when By == Y - 1, Dx == X - 1 ->
@@ -75,3 +78,54 @@ score_gate([_ | Rest], From, To) ->
   score_gate(Rest, From, To);
 score_gate([], _, _) ->
   0.
+
+%% These are the callbacks needed to make a gen_server process out of this - to let the game talk to other processes
+
+init(_) ->
+  {ok, setup_board()}.
+
+handle_call(show, _From, State) ->
+  {reply, State, State};
+handle_call({move, X, Y}, _From, State) ->
+  case move(X,Y,State) of
+    {ok, NewState} ->
+      {reply, {ok, NewState}, NewState};
+    Err = {error, _} ->
+      {reply, Err, State}
+  end;
+handle_call(score, _From, State) ->
+  {reply, score(State), State};
+handle_call(_, _, _) ->
+  {stop, error}.
+
+handle_cast(quit, State) ->
+  {stop, quit, State};
+handle_cast(_Request, State) ->
+  {noreply, State}.
+
+handle_info(_Info, State) ->
+  {noreply, State}.
+
+terminate(_, _) ->
+  that_was_fun.
+
+code_change(_OldVersion, State, _Extra) ->
+  State.
+
+
+%% gen_server wrappers
+
+start_game() ->
+  gen_server:start(?MODULE, {5,5}, []).
+
+see_board(Board) ->
+  gen_server:call(Board, show).
+
+make_move(Board, X, Y) ->
+  gen_server:call(Board, {move, X, Y}).
+
+get_score(Board) ->
+  gen_server:call(Board, score).
+
+quit(Board) ->
+  gen_server:cast(Board, quit).
