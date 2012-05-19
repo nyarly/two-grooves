@@ -4,6 +4,12 @@
 init() ->
   {[], [{gate,{3,4}, {3,5}}, {post, {2,2}}]}.
 
+move(X, Y, {[], Board}) ->
+  {[{X,Y}], Board};
+move(X, Y, {Moves = [{X, Yp} | Rest], Board}) when abs(Y - Yp) == 1, length(Moves) < 5 ->
+  {[{X,Y}], Board};
+move(X, Y, {Moves = [{Xp, Y} | Rest], Board}) when abs(X - Xp) == 1, length(Moves) < 5 ->
+  {[{X,Y}], Board};
 move(X, Y, {Moves, Board}) ->
   {[{X,Y} | Moves], Board}.
 
