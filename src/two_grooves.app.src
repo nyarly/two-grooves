@@ -1,7 +1,7 @@
 %%-*- mode: erlang -*-
-{application, two-grooves,
+{application, two_grooves,
  [
-  {description, "two-grooves"},
+  {description, "two_grooves"},
   {vsn, "1"},
   {modules, []},
   {registered, []},
@@ -13,6 +13,6 @@
                   mochiweb,
                   webmachine
                  ]},
-  {mod, { two-grooves_app, []}},
+  {mod, { two_grooves_app, []}},
   {env, []}
  ]}.

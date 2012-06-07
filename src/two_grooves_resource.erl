@@ -2,7 +2,7 @@
 %% @copyright YYYY author.
 %% @doc Example webmachine_resource.
 
--module(two-grooves_resource).
+-module(two_grooves_resource).
 -export([init/1, to_html/2]).
 
 -include_lib("webmachine/include/webmachine.hrl").
@@ -10,4 +10,5 @@
 init([]) -> {ok, undefined}.
 
 to_html(ReqData, State) ->
-    {"<html><body>Hello, new world</body></html>", ReqData, State}.
+  {ok, Body} = root_dtl:render([{games, [[{id, 1}], [{id,2}]]}]),
+  {Body, ReqData, State}.

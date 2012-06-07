@@ -1,9 +1,9 @@
 %% @author author <author@example.com>
 %% @copyright YYYY author.
 
-%% @doc Callbacks for the two-grooves application.
+%% @doc Callbacks for the two_grooves application.
 
--module(two-grooves_app).
+-module(two_grooves_app).
 -author('author <author@example.com>').
 
 -behaviour(application).
@@ -11,11 +11,11 @@
 
 
 %% @spec start(_Type, _StartArgs) -> ServerRet
-%% @doc application start callback for two-grooves.
+%% @doc application start callback for two_grooves.
 start(_Type, _StartArgs) ->
-    two-grooves_sup:start_link().
+    two_grooves_sup:start_link().
 
 %% @spec stop(_State) -> ServerRet
-%% @doc application stop callback for two-grooves.
+%% @doc application stop callback for two_grooves.
 stop(_State) ->
     ok.

@@ -1,7 +1,7 @@
 -module(snake_game).
 -behavior(gen_server).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
--export([start_game/0, see_board/1, make_move/3, get_score/1, quit/1]).
+-export([start_link/1, start_game/1, see_board/1, make_move/3, get_score/1, quit/1]).
 -define(SIZE_GUARD, X > 0, X =< Wide, Y > 0, Y =< Tall).
 
 setup_board() ->
@@ -95,11 +95,11 @@ handle_call({move, X, Y}, _From, State) ->
   end;
 handle_call(score, _From, State) ->
   {reply, score(State), State};
+handle_call(quit, _From, State) ->
+  {stop, normal, ok, State};
 handle_call(_, _, _) ->
   {stop, error}.
 
-handle_cast(quit, State) ->
-  {stop, quit, State};
 handle_cast(_Request, State) ->
   {noreply, State}.
 
@@ -115,8 +115,11 @@ code_change(_OldVersion, State, _Extra) ->
 
 %% gen_server wrappers
 
-start_game() ->
-  gen_server:start(?MODULE, {5,5}, []).
+start_link(Size) ->
+  gen_server:start_link(?MODULE, Size, []).
+
+start_game(Size) ->
+  gen_server:start(?MODULE, Size, []).
 
 see_board(Board) ->
   gen_server:call(Board, show).
@@ -128,4 +131,4 @@ get_score(Board) ->
   gen_server:call(Board, score).
 
 quit(Board) ->
-  gen_server:cast(Board, quit).
+  gen_server:call(Board, quit).

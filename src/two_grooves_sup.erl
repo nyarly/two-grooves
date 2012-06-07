@@ -1,9 +1,9 @@
 %% @author author <author@example.com>
 %% @copyright YYYY author.
 
-%% @doc Supervisor for the two-grooves application.
+%% @doc Supervisor for the two_grooves application.
 
--module(two-grooves_sup).
+-module(two_grooves_sup).
 -author('author <author@example.com>').
 
 -behaviour(supervisor).

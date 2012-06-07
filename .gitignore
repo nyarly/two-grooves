@@ -5,3 +5,6 @@ priv
 *.beam
 *.plt
 *.sw?
+deps/
+ebin/
+erl_crash.dump

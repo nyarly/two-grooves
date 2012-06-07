@@ -1,10 +1,11 @@
-%% @author author <author@example.com>
-%% @copyright YYYY author.
+%%% @author  Judson Lester nyarly@gmail.com
+%%% @copyright (C) 2012, Judson Lester. All Rights Reserved.
+%%% @doc
+%%%		Two Grooves startup code
+%%% @end
+%%% Created :  Tue May 29 02:45:31 2012 by Judson Lester
+-module(two_grooves).
 
-%% @doc two-grooves startup code
-
--module(two-grooves).
--author('author <author@example.com>').
 -export([start/0, start_link/0, stop/0]).
 
 ensure_started(App) ->
@@ -24,10 +25,10 @@ start_link() ->
     application:set_env(webmachine, webmachine_logger_module,
                         webmachine_logger),
     ensure_started(webmachine),
-    two-grooves_sup:start_link().
+    two_grooves_sup:start_link().
 
 %% @spec start() -> ok
-%% @doc Start the two-grooves server.
+%% @doc Start the two_grooves server.
 start() ->
     ensure_started(inets),
     ensure_started(crypto),
@@ -35,12 +36,12 @@ start() ->
     application:set_env(webmachine, webmachine_logger_module,
                         webmachine_logger),
     ensure_started(webmachine),
-    application:start(two-grooves).
+    application:start(two_grooves).
 
 %% @spec stop() -> ok
-%% @doc Stop the two-grooves server.
+%% @doc Stop the two_grooves server.
 stop() ->
-    Res = application:stop(two-grooves),
+    Res = application:stop(two_grooves),
     application:stop(webmachine),
     application:stop(mochiweb),
     application:stop(crypto),

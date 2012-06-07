@@ -1,5 +1,5 @@
 ERL ?= erl
-APP := two-grooves
+APP := two_grooves
 
 .PHONY: deps
 
