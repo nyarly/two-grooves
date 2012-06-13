@@ -10,9 +10,19 @@ setup_board() ->
 move(X, Y, {[], Board, Dims = {Wide, Tall}}) when ?SIZE_GUARD ->
   {ok, {[{X,Y}], Board, Dims}};
 move(X, Y, {Moves = [{X, Yp} | _], Board, Dims = {Wide, Tall}}) when ?SIZE_GUARD, abs(Y - Yp) == 1, length(Moves) < 5 ->
-  {ok, {[{X,Y} | Moves], Board, Dims}};
+  case lists:member({X,Y}, Moves) of
+    true ->
+      {error, invalid_move};
+    false ->
+      {ok, {[{X,Y} | Moves], Board, Dims}}
+  end;
 move(X, Y, {Moves = [{Xp, Y} | _], Board, Dims = {Wide, Tall}}) when ?SIZE_GUARD, abs(X - Xp) == 1, length(Moves) < 5 ->
-  {ok, {[{X,Y} | Moves], Board, Dims}};
+  case lists:member({X,Y}, Moves) of
+    true ->
+      {error, invalid_move};
+    false ->
+      {ok, {[{X,Y} | Moves], Board, Dims}}
+  end;
 move(_, _, _) ->
   {error, invalid_move}.
 
