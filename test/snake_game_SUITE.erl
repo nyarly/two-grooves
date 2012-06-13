@@ -22,7 +22,8 @@ end_per_group(_GroupName, _Config) ->
 init_per_testcase(_TestCase, Config) ->
   {ok, Board} = snake_game:start_game({5,5}),
   [{board, Board} | Config].
-end_per_testcase(_TestCase, _Config) ->
+end_per_testcase(_TestCase, Config) ->
+  snake_game:quit(?config(board, Config)),
   ok.
 groups() ->
   [].
