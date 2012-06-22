@@ -1,7 +1,7 @@
 -module(snake_game).
 -behavior(gen_server).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
--export([start_link/1, start_game/1, see_board/1, make_move/3, get_score/1, quit/1]).
+-export([start_link/1, start_game/1, see_board/1, make_move/3, get_score/1, quit/1, to_proplist/1]).
 -define(SIZE_GUARD, X > 0, X =< Wide, Y > 0, Y =< Tall).
 
 setup_board() ->
@@ -27,7 +27,7 @@ move(_, _, _) ->
   {error, invalid_move}.
 
 score(State) ->
-  {ok, score(State, 0)}.
+  score(State, 0).
 
 score({_, [], _}, Score) ->
   Score;
@@ -94,6 +94,8 @@ score_gate([], _, _) ->
 init(_) ->
   {ok, setup_board()}.
 
+handle_call(proplist, _From, State={Moves, Targets, Dims}) ->
+  {reply, {ok, [{moves, Moves}, {targets, Targets}, {dims, Dims}, {score, score(State)}]}, State};
 handle_call(show, _From, State) ->
   {reply, State, State};
 handle_call({move, X, Y}, _From, State) ->
@@ -104,7 +106,7 @@ handle_call({move, X, Y}, _From, State) ->
       {reply, Err, State}
   end;
 handle_call(score, _From, State) ->
-  {reply, score(State), State};
+  {reply, {ok, score(State)}, State};
 handle_call(quit, _From, State) ->
   {stop, normal, ok, State};
 handle_call(_, _, _) ->
@@ -142,3 +144,6 @@ get_score(Board) ->
 
 quit(Board) ->
   gen_server:call(Board, quit).
+
+to_proplist(Board) ->
+  gen_server:call(Board, proplist).

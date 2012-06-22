@@ -1,10 +1,10 @@
-%% @author author <author@example.com>
-%% @copyright YYYY author.
+%% @author Judson Lester <nyarly@gmail.com>
+%% @copyright 2012 Judson Lester.
 
 %% @doc Callbacks for the two_grooves application.
 
 -module(two_grooves_app).
--author('author <author@example.com>').
+-author('Judson Lester <nyarly@gmail.com>').
 
 -behaviour(application).
 -export([start/2,stop/1]).

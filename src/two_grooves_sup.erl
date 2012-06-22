@@ -1,10 +1,10 @@
-%% @author author <author@example.com>
-%% @copyright YYYY author.
+%% @author Judson Lester <nyarly@gmail.com>
+%% @copyright 2012 Judson Lester.
 
 %% @doc Supervisor for the two_grooves application.
 
 -module(two_grooves_sup).
--author('author <author@example.com>').
+-author('Judson Lester <nyarly@gmail.com>').
 
 -behaviour(supervisor).
 
@@ -50,6 +50,9 @@ init([]) ->
                  {port, 8000},
                  {log_dir, "priv/log"},
                  {dispatch, Dispatch}],
+    SnakeGame = {snake_game_top,
+           {snake_game_top, start, []},
+           permanent, 5000, supervisor, [snake_game_top]},
     Web = {webmachine_mochiweb,
            {webmachine_mochiweb, start, [WebConfig]},
            permanent, 5000, worker, [mochiweb_socket_server]},
