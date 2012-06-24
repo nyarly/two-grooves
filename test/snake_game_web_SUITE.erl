@@ -36,40 +36,24 @@ end_per_group(_GroupName, _Config) ->
   ok.
 
 init_per_testcase(_TestCase, Config) ->
-  StartResult = application:start(webmachine),
-  case(?config(tc_group_properties, Config)) of
-    undefined -> ok;
-    GroupProperties ->
-      init_per_testcase_by_group(?config(name, GroupProperties), Config)
-  end.
-
-init_per_testcase_by_group(web, Config) ->
+  application:start(webmachine),
   {ok, TopPid} = snake_game_top:start_link(),
   {ok, DispatchList} = application:get_env(webmachine, dispatch_list),
-  [
-    {top_pid, TopPid},
+  [ {top_pid, TopPid},
     {dispatch_list, DispatchList}
-    | Config
-  ]
-  ;
-init_per_testcase_by_group(top, Config) ->
-  Config.
+    | Config ].
 
 end_per_testcase(_TestCase, Config) ->
   application:stop(webmachine),
-  case(?config(top_pid, Config)) of
-    undefined -> ok;
-    TopPid -> exit(TopPid, normal)
-  end,
+  exit(?config(top_pid, Config), normal),
   ok.
 
 groups() ->
   [
-    {web, [], [index_dispatches, play_a_game]},
-    {top, [], [start_top, start_manager, start_soop]}
+    {web, [], [index_dispatches, play_a_game]}
   ].
 all() ->
-  [{group, web}, {group, top}].
+  [{group, web}].
 
 %%--------------------------------------------------------------------
 %%Helpers
@@ -87,7 +71,6 @@ build_request(Method, Path, Headers, Body) ->
   add_request_body(Body, BaseRD).
 
 build_request(Method, Path, Headers) ->
-  Scheme = "http",
   Version = {1,1},
   MochiReq = mochiweb_request:new(testing, Method, Path, Version, gb_trees:from_orddict(Headers)),
   WMReq = webmachine:new_request(mochiweb,MochiReq),
@@ -164,16 +147,4 @@ play_a_game(Config) ->
   0 = proplists:get_value(score, MovedGameResource),
   false = undefined =:= proplists:get_value(targets, MovedGameResource),
 
-  ok.
-
-start_top(_Config) ->
-  {ok, _} = snake_game_top:start_link(),
-  ok.
-
-start_manager(_Config) ->
-  {ok, _} = snake_game_manager:start_link(),
-  ok.
-
-start_soop(_Config) ->
-  {ok, _} = snake_game_soop:start_link(),
   ok.
