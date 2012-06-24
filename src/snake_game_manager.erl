@@ -47,10 +47,12 @@ next_id() ->
 %%%===================================================================
 
 init([]) ->
-  [webmachine_router:add_route(Dispatch) || Dispatch <- snake_game_resource:get_dispatches()],
+  [[webmachine_router:add_route(Dispatch) || Dispatch <- DispatchList] || DispatchList <-
+    [ Resource:get_dispatches() || Resource <- [snakegame_resource, snakegames_resource, snakegame_moves_resource]]],
+
   {ok, #state{games=gb_trees:empty()}}.
 
-handle_call({next_id}, _From, State = #state{games=Games, max_index=Max}) ->
+handle_call({next_id}, _From, State = #state{max_index=Max}) ->
   {reply, {ok, Max}, State#state{max_index=Max + 1}};
 handle_call({create_game, NewId, Size}, _From, State = #state{games=Games}) ->
   {ok, NewGame} = snake_game_soop:start_game(Size),
@@ -69,7 +71,7 @@ handle_call({list_games}, _From, State) ->
   {reply, {ok, gb_trees:keys(State#state.games)}, State};
 handle_call({reset_games}, _From, State) ->
   ok = loop_games(gb_trees:iterator(State#state.games),
-    fun(Key,Game) -> supervisor:terminate_child(snake_game_soop, Game) end ),
+    fun(_Key,Game) -> supervisor:terminate_child(snake_game_soop, Game) end ),
   {reply, ok, State#state{games=gb_trees:empty()}};
 handle_call(_, _, State) ->
   {reply, {error, bad_message}, State}.

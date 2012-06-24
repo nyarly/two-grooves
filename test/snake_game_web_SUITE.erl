@@ -120,32 +120,50 @@ setup_POST(Path, Headers, Body, Config) ->
 index_dispatches() ->
   [].
 index_dispatches(Config) ->
-  RD = build_request('POST', "snakegame/", [], "width=5&height=5"),
-  {snake_game_resource, [index], _RD2} = dispatch_request(?config(dispatch_list, Config), RD).
+  RD = build_request('POST', "snakegames/", [], "width=5&height=5"),
+  {snakegames_resource, [], _RD2} = dispatch_request(?config(dispatch_list, Config), RD).
 
 play_a_game() ->
   [].
 play_a_game(Config) ->
   %That is:
   %POST a new game
-  NewGameRequest = setup_POST("snakegame/", [], "width=5&height=5", Config),
-  {true, NewGameRequest, [index]} = snake_game_resource:post_is_create(NewGameRequest, [index]),
-  {NewPath, NewGameRequest, CreateContext} = snake_game_resource:create_path(NewGameRequest, [index]),
+  NewGameRequest = setup_POST("snakegames/", [], "width=5&height=5", Config),
+  {true, NewGameRequest, []} = snakegames_resource:post_is_create(NewGameRequest, []),
+  {NewPath, NewGameRequest, CreateContext} = snakegames_resource:create_path(NewGameRequest, []),
   NewGameUpdate = wrq:set_disp_path(NewPath, NewGameRequest),
-  {AcceptedTypes, NewGameUpdate, CreateContext} = snake_game_resource:content_types_accepted(NewGameUpdate, CreateContext),
+  {AcceptedTypes, NewGameUpdate, CreateContext} = snakegames_resource:content_types_accepted(NewGameUpdate, CreateContext),
   [from_www_form] = [ Fun || {Type, Fun} <- AcceptedTypes, "application/x-www-form-urlencoded" =:= Type],
   %Response should redirect to the URL of the new game
-  {{respond, 303}, _RedirectedRequest, CreateContext} = snake_game_resource:from_www_form(NewGameUpdate, CreateContext),
+  {{respond, 303}, _RedirectedRequest, CreateContext} = snakegames_resource:from_www_form(NewGameUpdate, CreateContext),
 
   %GET from that URL
   SeeNewGame = setup_GET("snakegame/1", [], Config),
-  GameResource = snake_game_resource:to_resource(SeeNewGame, []),
-  ct:pal("~p", [[GameResource]]),
+  GameResource = snakegame_resource:to_resource(SeeNewGame, []),
   [] = proplists:get_value(moves, GameResource),
   {5,5} = proplists:get_value(dims, GameResource),
   0 = proplists:get_value(score, GameResource),
   false = undefined =:= proplists:get_value(targets, GameResource),
   %That should be a game
+  %
+  MakeAMove = setup_POST("snakegame/1/moves", [], "x=3&y=3", Config),
+  {true, MakeAMove, []} = snakegame_moves_resource:post_is_create(MakeAMove, []),
+  {NewMovePath, MakeAMove, MoveContext} = snakegame_moves_resource:create_path(MakeAMove, []),
+  MadeAMove = wrq:set_disp_path(NewMovePath, MakeAMove),
+
+  {AcceptedMoveTypes, MadeAMove, MoveContext} = snakegame_moves_resource:content_types_accepted(MadeAMove, MoveContext),
+  [from_www_form] = [ Fun || {Type, Fun} <- AcceptedMoveTypes, "application/x-www-form-urlencoded" =:= Type],
+  %Response should redirect to the URL of the new game
+  {{respond, 303}, _RedirectedRequest2, MoveContext} = snakegame_moves_resource:from_www_form(MadeAMove, MoveContext),
+
+  %GET from that URL
+  SeeGame = setup_GET("snakegame/1", [], Config),
+  MovedGameResource = snakegame_resource:to_resource(SeeGame, []),
+  [{3,3}] = proplists:get_value(moves, MovedGameResource),
+  {5,5} = proplists:get_value(dims, MovedGameResource),
+  0 = proplists:get_value(score, MovedGameResource),
+  false = undefined =:= proplists:get_value(targets, MovedGameResource),
+
   ok.
 
 start_top(_Config) ->
