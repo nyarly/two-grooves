@@ -89,13 +89,26 @@ score_gate([_ | Rest], From, To) ->
 score_gate([], _, _) ->
   0.
 
+coord_pair_to_proplist({X, Y}) -> [{x, X}, {y, Y}].
+
+target_to_proplist({post, Around}) ->
+  [{type, post}, {around, coord_pair_to_proplist(Around)}];
+target_to_proplist({gate, Here, There}) ->
+  [{type, gate}, {between, [coord_pair_to_proplist(Here), coord_pair_to_proplist(There)]}].
+
 %% These are the callbacks needed to make a gen_server process out of this - to let the game talk to other processes
 
 init(_) ->
   {ok, setup_board()}.
 
 handle_call(proplist, _From, State={Moves, Targets, Dims}) ->
-  {reply, {ok, [{moves, Moves}, {targets, Targets}, {dims, Dims}, {score, score(State)}]}, State};
+  {reply, {ok,
+      [
+        {moves, lists:reverse([coord_pair_to_proplist(Pair) || Pair <- Moves])},
+        {targets, [target_to_proplist(Target) || Target <- Targets]},
+        {dims, coord_pair_to_proplist(Dims)},
+        {score, score(State)}
+      ]}, State};
 handle_call(show, _From, State) ->
   {reply, State, State};
 handle_call({move, X, Y}, _From, State) ->

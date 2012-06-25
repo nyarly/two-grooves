@@ -6,7 +6,7 @@
 %%% Created :  Tue May 29 02:49:15 2012 by Judson Lester
 -module(snakegames_resource).
 -author("Judson Lester nyarly@gmail.com").
--export([init/1, get_dispatches/0, to_resource/2, to_html/2, post_is_create/2, create_path/2, content_types_accepted/2, from_www_form/2]).
+-export([init/1, allowed_methods/2, get_dispatches/0, to_resource/2, to_html/2, post_is_create/2, create_path/2, content_types_accepted/2, from_www_form/2]).
 
 -include_lib("webmachine/include/webmachine.hrl").
 
@@ -15,8 +15,11 @@ init(Config) ->
 
 get_dispatches() ->
   [
-    {["snakegames"], ?MODULE, []}
+    {["snakegame"], ?MODULE, []}
   ].
+
+allowed_methods(ReqData, Context) ->
+  {['GET', 'POST', 'HEAD'], ReqData, Context}.
 
 post_is_create(ReqData, Context)->
   {true, ReqData, Context}.
@@ -40,9 +43,12 @@ from_www_form(ReqData, Context) ->
       {{respond, 303}, ReqData, Context}
   end.
 
-to_resource(_ReqData, []) ->
-  [{ids, snake_game_manager:list_games()}].
+to_resource(_ReqData, _Context) ->
+  {ok, Games} = snake_game_manager:list_games(),
+  [
+    {games, [[{id, Id}] || Id <- Games]}
+  ].
 
 to_html(ReqData, Context) ->
-  Result = snakegames_html_dtl:render(to_resource(ReqData, Context)),
+  {ok, Result} = snakegames_html_dtl:render(to_resource(ReqData, Context)),
   {Result, ReqData, Context}.

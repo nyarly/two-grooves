@@ -39,4 +39,4 @@ from_www_form(ReqData, Context) ->
   {Y, []} = string:to_integer(proplists:get_value("y", Params)),
 
   snake_game:make_move(Game, X, Y),
-  {{respond, 303}, ReqData, Context}.
+  {{respond, 303}, wrq:set_resp_header("Location", io_lib:format("/snakegame/~s",[wrq:path_info(id, ReqData)]), ReqData), Context}.

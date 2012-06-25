@@ -1,0 +1,35 @@
+{% extends "base.dtl" %}
+{% block title %}Two Grooves - A Snake Game{% endblock %}
+{% block body %}
+<h2><a href="snakegame/{{ id }}">Snake Game #{{ id }}</a></h2>
+
+<h3>Board Dimensions: {{ dims.x }}x{{ dims.y }}
+<h3>Current Score: {{score}}</h3>
+<h3>Scoring Targets (i.e. "The Board")</h3>
+<ul>
+  {% for target in targets %}
+  <li>
+    <p>{{ target }}</p>
+  </li>
+  {% endfor %}
+</ul>
+<h3>Moves so far</h3>
+<table cellspacing="0">
+  <tr>
+    <th>X</th>
+    <th>Y</th>
+  </tr>
+  {% for move in moves %}
+  <tr>
+    <td>{{ move.x }}</td>
+    <td>{{ move.y }}</td>
+  </tr>
+  {% endfor %}
+</table>
+<h3>Make a move:</h3>
+<form action="/snakegame/{{id}}/moves" method="post">
+  <input type="text" name="x" value="" />
+  <input type="text" name="y" value="" />
+  <input type="submit" class="submit" value="submit" name="submit" />
+</form>
+{% endblock %}

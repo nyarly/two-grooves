@@ -9,6 +9,9 @@
 
 init([]) -> {ok, undefined}.
 
+to_resource(_ReqData, _State) ->
+  [].
+
 to_html(ReqData, State) ->
-  {ok, Body} = root_dtl:render([{games, [[{id, 1}], [{id,2}]]}]),
+  {ok, Body} = root_dtl:render(to_resource(ReqData, State)),
   {Body, ReqData, State}.

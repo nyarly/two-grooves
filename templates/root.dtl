@@ -1,27 +1,15 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Two Grooves</title>
-  </head>
-  <body>
-    <p>Obviously, this is a game about grooves: those elusive beats and thrums that can charge a night or rule a lifetime.</p>
+{% extends "base.dtl" %}
+{% block title %}Two Grooves{% endblock %}
+{% block body %}
+<p>Obviously, this is a game about grooves: those elusive beats and thrums that can charge a night or rule a lifetime.</p>
 
-    <p>Just as obviously, this is a game about two grooves.  A light groove, and a dark groove.  And maybe those two grooves can jive as one - or else crash into each other in a tangle of cacophonic squalor.</p>
+<p>Just as obviously, this is a game about two grooves.  A light groove, and a dark groove.  And maybe those two grooves can jive as one - or else crash into each other in a tangle of cacophonic squalor.</p>
 
-    {% if games %}
-    <p>In the mean time, there are games to play:</p>
+<p>In the mean time, there are games to play:</p>
 
-    {{ games }}
-
-    <ul>
-    {% for game in games %}
-      <li>
-        <a href="/snake_game/{{ game.id }}">{{ game.id }}</a>
-      </li>
-    {% endfor %}
-    </ul>
-
-    {% endif %}
-  </body>
-</html>
+<ul>
+  <li>
+  <a href="/snakegames">The Snake Game</a>
+  </li>
+</ul>
+{% endblock %}

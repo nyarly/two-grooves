@@ -22,8 +22,8 @@ to_resource(ReqData, _Context) ->
   {Index, []} = string:to_integer(wrq:path_info(id, ReqData)),
   {ok, Game} = snake_game_manager:find_game(Index),
   {ok, Proplist} = snake_game:to_proplist(Game),
-  Proplist.
+  [{id, Index} | Proplist].
 
 to_html(ReqData, Context) ->
-  Result = snakegame_html_dtl:render(to_resource(ReqData, Context)),
+  {ok, Result} = snakegame_html_dtl:render(to_resource(ReqData, Context)),
   {Result, ReqData, Context}.

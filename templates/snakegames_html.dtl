@@ -1,0 +1,19 @@
+{% extends "base.dtl" %}
+{% block title %}Two Grooves - Snake Game{% endblock %}
+{% block body %}
+Games of Snake Game available for play and review:
+<ul>
+{% for game in games %}
+  <li>
+    <a href="/snakegame/{{ game.id }}">Game #{{ game.id }}</a>
+  </li>
+{% endfor %}
+</ul>
+
+<p>Start a new game:</p>
+<form action="/snakegame" method="post">
+  <input type="text" name="width" value="5" />
+  <input type="text" name="height" value="5" />
+  <input type="submit" class="submit" value="submit" name="button" />
+</form>
+{% endblock %}
