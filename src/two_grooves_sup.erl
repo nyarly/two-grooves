@@ -50,11 +50,12 @@ init([]) ->
                  {port, 8000},
                  {log_dir, "priv/log"},
                  {dispatch, Dispatch}],
+              io:format("~p~n", [WebConfig]),
     Web = {webmachine_mochiweb,
            {webmachine_mochiweb, start, [WebConfig]},
            permanent, 5000, worker, [mochiweb_socket_server]},
     SnakeGame = {snake_game_top,
            {snake_game_top, start_link, []},
            permanent, 5000, supervisor, [snake_game_top]},
-    Processes = [SnakeGame, Web],
+    Processes = [Web, SnakeGame],
     {ok, { {one_for_one, 10, 10}, Processes} }.

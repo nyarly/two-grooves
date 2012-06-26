@@ -47,9 +47,9 @@ next_id() ->
 %%%===================================================================
 
 init([]) ->
+  io:format("~p~n", [application:get_env(webmachine, dispatch_list)]),
   [[webmachine_router:add_route(Dispatch) || Dispatch <- DispatchList] || DispatchList <-
     [ Resource:get_dispatches() || Resource <- [snakegame_resource, snakegames_resource, snakegame_moves_resource]]],
-
   {ok, #state{games=gb_trees:empty()}}.
 
 handle_call({next_id}, _From, State = #state{max_index=Max}) ->

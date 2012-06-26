@@ -1,0 +1,6 @@
+{% extends "base.dtl" %}
+{% block title %}Two Grooves - A Snake Game{% endblock %}
+{% block body %}
+<h2>That move was invalid: {{ error }}</h2>
+<h2><a href="/snakegame/{{ game_id }}">Return to Snake Game #{{ game_id }}</a></h2>
+{% endblock %}

@@ -9,7 +9,7 @@
 
 <ul>
   <li>
-  <a href="/snakegames">The Snake Game</a>
+  <a href="/snakegame">The Snake Game</a>
   </li>
 </ul>
 {% endblock %}

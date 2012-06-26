@@ -35,8 +35,27 @@ from_www_form(ReqData, Context) ->
   {ok, Game} = snake_game_manager:find_game(Id),
 
   Params = mochiweb_util:parse_qs(wrq:req_body(ReqData)),
+  try parse_params(Params) of
+    {X, Y} ->
+      case snake_game:make_move(Game, X, Y) of
+        {ok, _} ->
+          {{respond, 303}, wrq:set_resp_header("Location", io_lib:format("/snakegame/~s",[wrq:path_info(id, ReqData)]), ReqData), Context};
+        {error, Error} ->
+          {{halt, 400}, invalid_move(Error, ReqData), Context}
+      end
+
+    catch
+      _:_ ->
+        {{halt, 400}, invalid_move("Missing arguments", ReqData), Context}
+  end.
+
+
+parse_params(Params) ->
   {X, []} = string:to_integer(proplists:get_value("x", Params)),
   {Y, []} = string:to_integer(proplists:get_value("y", Params)),
+  {X, Y}.
 
-  snake_game:make_move(Game, X, Y),
-  {{respond, 303}, wrq:set_resp_header("Location", io_lib:format("/snakegame/~s",[wrq:path_info(id, ReqData)]), ReqData), Context}.
+
+invalid_move(Error, ReqData) ->
+  {ok, Body} = snakegame_moves_html_dtl:render([{error, Error}, {game_id, wrq:path_info(id, ReqData)}]),
+  wrq:set_resp_body(Body, ReqData).
