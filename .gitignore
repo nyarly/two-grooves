@@ -1,6 +1,6 @@
 .eunit
 deps
-priv
+priv/log
 *.o
 *.beam
 *.plt
@@ -8,4 +8,5 @@ priv
 deps/
 ebin/
 erl_crash.dump
+.sass-cache/
 logs/

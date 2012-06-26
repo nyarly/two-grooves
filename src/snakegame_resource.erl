@@ -24,6 +24,10 @@ to_resource(ReqData, _Context) ->
   {ok, Proplist} = snake_game:to_proplist(Game),
   [{id, Index} | Proplist].
 
+to_json(ReqData, Context) ->
+  {mochijson2:encode(to_resource(ReqData, Context)), ReqData, Context}.
+
 to_html(ReqData, Context) ->
-  {ok, Result} = snakegame_html_dtl:render(to_resource(ReqData, Context)),
+  {Json, _ReqData, _Context} = to_json(ReqData, Context),
+  {ok, Result} = snakegame_html_dtl:render([{json, Json} | to_resource(ReqData, Context)]),
   {Result, ReqData, Context}.
