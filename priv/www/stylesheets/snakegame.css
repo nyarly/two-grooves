@@ -1,0 +1,5 @@
+/* line 1, ../../../sass/snakegame.sass */
+#snakegame_board {
+  width: 700px;
+  height: 700px;
+}

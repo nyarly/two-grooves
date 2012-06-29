@@ -5,7 +5,7 @@
 -define(SIZE_GUARD, X > 0, X =< Wide, Y > 0, Y =< Tall).
 
 setup_board() ->
-  {[], [{gate,{3,4}, {3,5}}, {post, {2,2}}], {5,5}}.
+  {[], [{gate,{3,4}, {3,5}}, {gate,{3,2},{4,2}}, {post, {3,3}}], {5,5}}.
 
 move(X, Y, {[], Board, Dims = {Wide, Tall}}) when ?SIZE_GUARD ->
   {ok, {[{X,Y}], Board, Dims}};

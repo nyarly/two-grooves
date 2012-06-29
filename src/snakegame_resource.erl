@@ -6,7 +6,7 @@
 %%% Created :  Tue May 29 02:49:15 2012 by Judson Lester
 -module(snakegame_resource).
 -author("Judson Lester nyarly@gmail.com").
--export([init/1, get_dispatches/0, to_resource/2, to_html/2]).
+-export([init/1, get_dispatches/0, content_types_provided/2, to_resource/2, to_html/2, to_json/2]).
 
 -include_lib("webmachine/include/webmachine.hrl").
 
@@ -24,8 +24,18 @@ to_resource(ReqData, _Context) ->
   {ok, Proplist} = snake_game:to_proplist(Game),
   [{id, Index} | Proplist].
 
+content_types_provided(ReqData, Context) ->
+  List = [
+    {"text/html", to_html},
+    {"application/json", to_json}
+  ],
+  {List, ReqData, Context}.
+
 to_json(ReqData, Context) ->
   {mochijson2:encode(to_resource(ReqData, Context)), ReqData, Context}.
+
+xhtml_header(ReqData) ->
+  wrq:set_resp_header("Content-Type", "application/xhtml+xml", ReqData).
 
 to_html(ReqData, Context) ->
   {Json, _ReqData, _Context} = to_json(ReqData, Context),
