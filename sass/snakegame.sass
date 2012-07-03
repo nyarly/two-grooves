@@ -1,3 +1,43 @@
-#snakegame_board
-  width: 700px
-  height: 700px
+$height: 700px
+$board_width: 65%
+$status_width: 100% - $board_width
+
+#html-board
+  width: 100%
+  height: $height
+  overflow: hidden
+
+#svg-board
+  float: left
+  max-height: $height
+  width: $board_width
+
+#status
+  float: left
+  height: $height
+  width: $status_width
+
+html
+  padding: 0
+  margin: 0
+
+body
+  padding: 0
+  margin: 0
+
+#state
+  font-size: 24pt
+  margin: 0.5em
+  dt
+    float: left
+    font-weight: bold
+  dd
+    text-align: right
+    margin: 0 1em
+
+#events
+  margin: 2em
+
+.head
+  path#stone
+    stroke: blue

@@ -34,10 +34,8 @@ content_types_provided(ReqData, Context) ->
 to_json(ReqData, Context) ->
   {mochijson2:encode(to_resource(ReqData, Context)), ReqData, Context}.
 
-xhtml_header(ReqData) ->
-  wrq:set_resp_header("Content-Type", "application/xhtml+xml", ReqData).
 
 to_html(ReqData, Context) ->
   {Json, _ReqData, _Context} = to_json(ReqData, Context),
-  {ok, Result} = snakegame_html_dtl:render([{json, Json} | to_resource(ReqData, Context)]),
+  {ok, Result} = snakegame_html_dtl:render([{json, Json}, {game, to_resource(ReqData, Context)}]),
   {Result, ReqData, Context}.

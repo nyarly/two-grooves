@@ -1,0 +1,5 @@
+<ol class="{{ name }}">
+  {% for item in resource %}
+  <li>{{item}}</li>
+  {% endfor %}
+</ol>

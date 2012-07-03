@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head profile="http://madhelm.net/http-profiles/boardgame">
+    <meta charset="UTF-8" />
+    <title>Two Grooves - A Snake Game</title>
+    <script type="text/javascript" src="/js/jquery-1.7.2.js"></script>
+    <script type="text/javascript" src="/js/d3.v2.js"></script>
+    <script type="text/javascript" charset="utf-8" src="/js/board_interface.js"></script>
+    <script type="text/javascript" charset="utf-8" src="/js/snakegame/html_interface.js"></script>
+    <link rel="stylesheet" href="/style/snakegame.css" type="text/css" media=screen />
+  </head>
+  <body>
+    <object id="svg-board" data="/img/snake_board.svg" type="image/svg+xml"> </object>
+    <div id="status">
+      <dl id="state">
+        <dt>Score</dt>
+        <dd id="score">0</dd>
+        <dt>Moves Remaining</dt>
+        <dd id="moves-remaining">5</dd>
+      </dl>
+      <div id="events"></div>
+    </div>
+  </body>
+</html>

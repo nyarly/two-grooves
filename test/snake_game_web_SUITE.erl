@@ -103,7 +103,7 @@ setup_POST(Path, Headers, Body, Config) ->
 index_dispatches() ->
   [].
 index_dispatches(Config) ->
-  RD = build_request('POST', "snakegames/", [], "width=5&height=5"),
+  RD = build_request('POST', "snakegame/", [], "width=5&height=5"),
   {snakegames_resource, [], _RD2} = dispatch_request(?config(dispatch_list, Config), RD).
 
 play_a_game() ->
@@ -111,7 +111,7 @@ play_a_game() ->
 play_a_game(Config) ->
   %That is:
   %POST a new game
-  NewGameRequest = setup_POST("snakegames/", [], "width=5&height=5", Config),
+  NewGameRequest = setup_POST("snakegame/", [], "width=5&height=5", Config),
   {true, NewGameRequest, []} = snakegames_resource:post_is_create(NewGameRequest, []),
   {NewPath, NewGameRequest, CreateContext} = snakegames_resource:create_path(NewGameRequest, []),
   NewGameUpdate = wrq:set_disp_path(NewPath, NewGameRequest),
@@ -124,7 +124,7 @@ play_a_game(Config) ->
   SeeNewGame = setup_GET("snakegame/1", [], Config),
   GameResource = snakegame_resource:to_resource(SeeNewGame, []),
   [] = proplists:get_value(moves, GameResource),
-  {5,5} = proplists:get_value(dims, GameResource),
+  [{x,5},{y,5}] = proplists:get_value(dims, GameResource),
   0 = proplists:get_value(score, GameResource),
   false = undefined =:= proplists:get_value(targets, GameResource),
   %That should be a game
@@ -142,8 +142,8 @@ play_a_game(Config) ->
   %GET from that URL
   SeeGame = setup_GET("snakegame/1", [], Config),
   MovedGameResource = snakegame_resource:to_resource(SeeGame, []),
-  [{3,3}] = proplists:get_value(moves, MovedGameResource),
-  {5,5} = proplists:get_value(dims, MovedGameResource),
+  [[{x,3},{y,3}]] = proplists:get_value(moves, MovedGameResource),
+  [{x,5},{y,5}] = proplists:get_value(dims, MovedGameResource),
   0 = proplists:get_value(score, MovedGameResource),
   false = undefined =:= proplists:get_value(targets, MovedGameResource),
 

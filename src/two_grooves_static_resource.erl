@@ -71,6 +71,7 @@ gzip(Content) ->
 content_types_provided(RD, Cfg) ->
   {[
       {"application/javascript",  serve},
+      {"application/ecmascript",  serve},
       {"text/html",               serve},
       {"text/css",                serve},
       {"text/plain",              serve},

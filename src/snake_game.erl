@@ -2,37 +2,83 @@
 -behavior(gen_server).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 -export([start_link/1, start_game/1, see_board/1, make_move/3, get_score/1, quit/1, to_proplist/1]).
--define(SIZE_GUARD, X > 0, X =< Wide, Y > 0, Y =< Tall).
+-record(coords, {x, y}).
+-record(board, {moves=[], features=[], player, dimensions=#coords{x=5,y=5}}).
+-define(SIZE_GUARD, X > 0, X =< Board#board.dimensions#coords.x, Y > 0, Y =< Board#board.dimensions#coords.y).
 
-setup_board() ->
-  {[], [{gate,{3,4}, {3,5}}, {gate,{3,2},{4,2}}, {post, {3,3}}], {5,5}}.
+random_features(X,Y) ->
+  random_features(X, Y, erlang:now()).
 
-move(X, Y, {[], Board, Dims = {Wide, Tall}}) when ?SIZE_GUARD ->
-  {ok, {[{X,Y}], Board, Dims}};
-move(X, Y, {Moves = [{X, Yp} | _], Board, Dims = {Wide, Tall}}) when ?SIZE_GUARD, abs(Y - Yp) == 1, length(Moves) < 5 ->
+random_features(X, Y, Seed) ->
+  {Wiggle, Seed1} = random:uniform_s(max(1,round(X * Y * 0.15)), Seed),
+  random_features(X, Y, Seed1, max(1,round(X * Y * 0.15 + Wiggle)), []).
+
+random_features(_X, _Y, _Seed, 0, Acc) ->
+  Acc;
+random_features(X, Y, Seed, Count, Acc) ->
+  {Feature, Seed2} = case random:uniform_s(3, Seed) of
+    {1, Seed1} ->
+      random_feature(post, X, Y, Seed1);
+    {2, Seed1} ->
+      random_feature(ns_gate, X, Y, Seed1);
+    {3, Seed1} ->
+      random_feature(ns_gate, X, Y, Seed1)
+  end,
+  case lists:member(Feature, Acc) of
+    true ->
+      random_features(X, Y, Seed2, Count, Acc);
+    false ->
+      random_features(X, Y, Seed2, Count - 1, [Feature | Acc])
+  end.
+
+random_feature(ew_gate, X, Y, Seed) ->
+  {FX, Seed1} = random:uniform_s(X, Seed),
+  {FY, Seed2} = random:uniform_s(Y, Seed1),
+  {TX, Seed3} = random:uniform_s(X, Seed2),
+  {{gate, {FX, FY}, {TX, FY}}, Seed3};
+random_feature(ns_gate, X, Y, Seed) ->
+  {FX, Seed1} = random:uniform_s(X, Seed),
+  {FY, Seed2} = random:uniform_s(Y, Seed1),
+  {TY, Seed3} = random:uniform_s(Y, Seed2),
+  {{gate, {FX, FY}, {FX, TY}}, Seed3};
+random_feature(post, X, Y, Seed) ->
+  {PX, Seed1} = random:uniform_s(X + 1, Seed),
+  {PY, Seed2} = random:uniform_s(Y + 1, Seed1),
+  {{post, {PX, PY}}, Seed2}.
+
+setup_board({with_features, Features}) ->
+  #board{features=Features};
+setup_board({X,Y}) ->
+  #board{features=random_features(X,Y), dimensions=#coords{x=X,y=Y}}.
+
+move(X, Y, Board=#board{moves=[]}) when ?SIZE_GUARD ->
+  {ok, Board#board{moves=[{X,Y}]}};
+move(X, Y, Board=#board{moves=Moves=[{X, Yp} | _]}) when ?SIZE_GUARD, abs(Y - Yp) == 1, length(Moves) < 5 ->
   case lists:member({X,Y}, Moves) of
     true ->
-      {error, invalid_move};
+      {error, "Can't double back"};
     false ->
-      {ok, {[{X,Y} | Moves], Board, Dims}}
+      {ok, Board#board{moves=[{X,Y} | Moves]}}
   end;
-move(X, Y, {Moves = [{Xp, Y} | _], Board, Dims = {Wide, Tall}}) when ?SIZE_GUARD, abs(X - Xp) == 1, length(Moves) < 5 ->
+move(X, Y, Board=#board{moves=Moves=[{Xp, Y} | _]}) when ?SIZE_GUARD, abs(X - Xp) == 1, length(Moves) < 5 ->
   case lists:member({X,Y}, Moves) of
     true ->
-      {error, invalid_move};
+      {error, "Can't double back"};
     false ->
-      {ok, {[{X,Y} | Moves], Board, Dims}}
+      {ok, Board#board{moves=[{X,Y} | Moves]}}
   end;
+move(X, Y, Board) when ?SIZE_GUARD ->
+  {error, "Not adjacent to head"};
 move(_, _, _) ->
-  {error, invalid_move}.
+  {error, "Out of bounds"}.
 
 score(State) ->
   score(State, 0).
 
-score({_, [], _}, Score) ->
+score(#board{features=[]}, Score) ->
   Score;
-score({Moves, [Thing | Board], Dims}, Score) ->
-  score_item(Moves, Thing) + score({Moves, Board, Dims}, Score).
+score(Board=#board{moves=Moves, features=[Thing | Rest]}, Score) ->
+  score_item(Moves, Thing) + score(Board#board{features=Rest}, Score).
 
 score_item(Moves, {post, Around}) ->
   score_post(Moves, Around);
@@ -98,15 +144,15 @@ target_to_proplist({gate, Here, There}) ->
 
 %% These are the callbacks needed to make a gen_server process out of this - to let the game talk to other processes
 
-init(_) ->
-  {ok, setup_board()}.
+init(Config) ->
+  {ok, setup_board(Config)}.
 
-handle_call(proplist, _From, State={Moves, Targets, Dims}) ->
+handle_call(proplist, _From, State) ->
   {reply, {ok,
       [
-        {moves, lists:reverse([coord_pair_to_proplist(Pair) || Pair <- Moves])},
-        {targets, [target_to_proplist(Target) || Target <- Targets]},
-        {dims, coord_pair_to_proplist(Dims)},
+        {moves, lists:reverse([coord_pair_to_proplist(Pair) || Pair <- State#board.moves])},
+        {targets, [target_to_proplist(Target) || Target <- State#board.features]},
+        {dims, coord_pair_to_proplist({State#board.dimensions#coords.x, State#board.dimensions#coords.y})},
         {score, score(State)}
       ]}, State};
 handle_call(show, _From, State) ->

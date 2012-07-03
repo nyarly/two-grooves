@@ -10,3 +10,4 @@ ebin/
 erl_crash.dump
 .sass-cache/
 logs/
+.bundle/
