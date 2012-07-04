@@ -136,12 +136,16 @@ all_features_within_board(Config) ->
   DimY = proplists:get_value(y, Size),
   [ case proplists:get_value(type, Feature) of
       post ->
-        ?assertFun(fun(Val) ->         0 < Val end, proplists:get_value(x, proplists:get_value(around, Feature))),
-        ?assertFun(fun(Val) ->         0 < Val end, proplists:get_value(y, proplists:get_value(around, Feature))),
-        ?assertFun(fun(Val) -> DimX + 1 >= Val end, proplists:get_value(x, proplists:get_value(around, Feature))),
-        ?assertFun(fun(Val) -> DimY + 1 >= Val end, proplists:get_value(y, proplists:get_value(around, Feature)));
+        ?assertFun(fun(Val) ->    0 =< Val end, proplists:get_value(x, proplists:get_value(around, Feature))),
+        ?assertFun(fun(Val) ->    0 =< Val end, proplists:get_value(y, proplists:get_value(around, Feature))),
+        ?assertFun(fun(Val) -> DimX >= Val end, proplists:get_value(x, proplists:get_value(around, Feature))),
+        ?assertFun(fun(Val) -> DimY >= Val end, proplists:get_value(y, proplists:get_value(around, Feature)));
       gate ->
         [Here, There] = proplists:get_value(between, Feature),
+        case {?config(x, Here), ?config(y, Here), ?config(x, There), ?config(y, There)} of
+          {X, Hy, X, Ty} -> 1 = abs(Hy - Ty);
+          {Hx, Y, Tx, Y} -> 1 = abs(Hx - Tx)
+        end,
         ?assertFun(fun(Val) ->     0 < Val end, proplists:get_value(x, Here)),
         ?assertFun(fun(Val) ->     0 < Val end, proplists:get_value(y, Here)),
         ?assertFun(fun(Val) ->     0 < Val end, proplists:get_value(x, There)),
@@ -156,8 +160,15 @@ enough_features_generated(Config) ->
   Board = ?config(board, Config),
   {ok, List} = snake_game:to_proplist(Board),
   Features = proplists:get_value(targets, List),
-  ct:pal("Expecting count ~p in features: ~p~n", [?config(feature_count, Config), Features]),
   true = length(Features) >= ?config(feature_count, Config).
+
+score_two_for_one(Config) ->
+  {ok, Board} = snake_game:start_game({with_features, [{gate, {3,3},{4,3}}, {gate, {3,3},{3,4}}]}),
+  {ok, _} = snake_game:make_move(Board, 3,4),
+  {ok, _} = snake_game:make_move(Board, 3,3),
+  {ok, _} = snake_game:make_move(Board, 4,3),
+  {ok, 6} = snake_game:get_score(Board),
+  snake_game:quit(Board).
 
 score_through_gate(Config) ->
   Board = ?config(board, Config),

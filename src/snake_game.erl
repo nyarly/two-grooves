@@ -22,7 +22,7 @@ random_features(X, Y, Seed, Count, Acc) ->
     {2, Seed1} ->
       random_feature(ns_gate, X, Y, Seed1);
     {3, Seed1} ->
-      random_feature(ns_gate, X, Y, Seed1)
+      random_feature(ew_gate, X, Y, Seed1)
   end,
   case lists:member(Feature, Acc) of
     true ->
@@ -32,19 +32,17 @@ random_features(X, Y, Seed, Count, Acc) ->
   end.
 
 random_feature(ew_gate, X, Y, Seed) ->
-  {FX, Seed1} = random:uniform_s(X, Seed),
+  {FX, Seed1} = random:uniform_s(X - 1, Seed),
   {FY, Seed2} = random:uniform_s(Y, Seed1),
-  {TX, Seed3} = random:uniform_s(X, Seed2),
-  {{gate, {FX, FY}, {TX, FY}}, Seed3};
+  {{gate, {FX, FY}, {FX + 1, FY}}, Seed2};
 random_feature(ns_gate, X, Y, Seed) ->
   {FX, Seed1} = random:uniform_s(X, Seed),
-  {FY, Seed2} = random:uniform_s(Y, Seed1),
-  {TY, Seed3} = random:uniform_s(Y, Seed2),
-  {{gate, {FX, FY}, {FX, TY}}, Seed3};
+  {FY, Seed2} = random:uniform_s(Y - 1, Seed1),
+  {{gate, {FX, FY}, {FX, FY + 1}}, Seed2};
 random_feature(post, X, Y, Seed) ->
-  {PX, Seed1} = random:uniform_s(X + 1, Seed),
-  {PY, Seed2} = random:uniform_s(Y + 1, Seed1),
-  {{post, {PX, PY}}, Seed2}.
+  {PX, Seed1} = random:uniform_s(X - 1, Seed),
+  {PY, Seed2} = random:uniform_s(Y - 1, Seed1),
+  {{post, {PX + 1, PY + 1}}, Seed2}.
 
 setup_board({with_features, Features}) ->
   #board{features=Features};

@@ -39,6 +39,11 @@ BoardInterface.bindDocumentTo(function(){
       var board = this
       var glyphs = this.glyphs
 
+      d3.select('svg').attr('viewBox', "0 0 " +
+          json.dims.x * glyphs.square.size.x + " " +
+          json.dims.y * glyphs.square.size.y)
+
+
       var squares = d3.select('#board').selectAll("use").data(coords)
       squares.enter().append("use").
       attr("xlink:href", "#square").

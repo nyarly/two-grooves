@@ -5,14 +5,13 @@
 
 -define(CHUNK_SIZE, 4096).
 
--record(config, {root_dir}).
+-record(config, {root_dir, zstream}).
 
 init([RootDir]) ->
   {ok, #config{root_dir=RootDir}}.
 
 resource_exists(RD, Cfg) ->
   Path = source_path(RD, Cfg),
-  io:format("File: ~s found? ~p~n", [Path, filelib:is_file(Path)]),
   {filelib:is_file(Path), RD, Cfg}.
 
 source_path(RD, #config{root_dir=RootDir}) ->
@@ -22,50 +21,65 @@ maybe_gzip(RD, Cfg) ->
   case wrq:method(RD) of
     'GET' ->
       case (filelib:file_size(source_path(RD, Cfg)) < ?CHUNK_SIZE) of
-        true -> {"gzip", fun gzip/1 };
+        true -> {Cfg, {"gzip", fun gzip/1 }};
         false -> no
       end;
     _ -> no
   end.
 
-maybe_deflate(RD, _Cfg) ->
+maybe_deflate(RD, Cfg) ->
   case wrq:method(RD) of
     'GET' ->
-      {"deflate", deflate_fun()};
+      case Cfg#config.zstream of
+        undefined ->
+          ZStreamRef = make_ref(),
+          Fun = fun(Data) -> deflate(ZStreamRef, Data) end,
+          {Cfg#config{zstream=ZStreamRef}, {"deflate", Fun}};
+        ZStreamRef ->
+          Fun = fun(Data) -> deflate(ZStreamRef, Data) end,
+          {Cfg, {"deflate", Fun}}
+      end;
     _ -> no
   end.
 
-deflate_fun() ->
-  ZStream = zlib:open(),
-  ok = zlib:deflateInit(ZStream),
-  fun(Data) -> deflate(ZStream, Data) end.
+retrieve_zstream(ZStreamRef) ->
+  case get(ZStreamRef) of
+    undefined ->
+      ZStream = zlib:open(),
+      ok = zlib:deflateInit(ZStream),
+      put(ZStreamRef, ZStream),
+      ZStream;
+    ZStream ->
+      ZStream
+  end.
 
-deflate(ZStream, <<>>) ->
+deflate(ZStreamRef, <<>>) ->
+  ZStream = retrieve_zstream(ZStreamRef),
   Chunk = zlib:deflate(ZStream, <<>>, finish),
   zlib:deflateEnd(ZStream),
   zlib:close(ZStream),
+  put(ZStreamRef, undefined),
   Chunk;
-deflate(ZStream, Data) ->
-  zlib:deflate(ZStream, Data).
+deflate(ZStreamRef, Data) ->
+  zlib:deflate(retrieve_zstream(ZStreamRef), Data).
 
 collect_encodings(RD, Cfg) ->
-  lists:foldl(fun(Maybe, List) ->
+  lists:foldl(fun(Maybe, {Ctx, List}) ->
         case Maybe(RD, Cfg) of
-          no -> List;
-          Method -> [Method | List]
+          no -> {Ctx, List};
+          {Ctx2, Method} -> {Ctx2, [Method | List]}
         end
     end,
-    [{"identity", fun(X) -> X end}],
+    {Cfg, [{"identity", fun(X) -> X end}]},
     [fun maybe_gzip/2, fun maybe_deflate/2]).
 
-
 encodings_provided(RD, Cfg) ->
-  {collect_encodings(RD, Cfg), RD, Cfg}.
+  {Cfg2, Encodings} = collect_encodings(RD, Cfg),
+  {Encodings, RD, Cfg2}.
 
 gzip(<<>>) ->
   <<>>;
 gzip(Content) ->
-  io:format("Compressing: ~p~n", [Content]),
   zlib:gzip(Content).
 
 content_types_provided(RD, Cfg) ->
