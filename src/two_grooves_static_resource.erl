@@ -1,11 +1,13 @@
 -module(two_grooves_static_resource).
 
--export([init/1, resource_exists/2, encodings_provided/2, content_types_provided/2, serve/2]).
+-export([init/1, resource_exists/2, encodings_provided/2, content_types_provided/2, last_modified/2, generate_etag/2, serve/2]).
 -include_lib("webmachine/include/webmachine.hrl").
 
 -define(CHUNK_SIZE, 4096).
 
 -record(config, {root_dir, zstream}).
+
+%%Resource API functions
 
 init([RootDir]) ->
   {ok, #config{root_dir=RootDir}}.
@@ -13,6 +15,58 @@ init([RootDir]) ->
 resource_exists(RD, Cfg) ->
   Path = source_path(RD, Cfg),
   {filelib:is_file(Path), RD, Cfg}.
+
+encodings_provided(RD, Cfg) ->
+  {Cfg2, Encodings} = collect_encodings(RD, Cfg),
+  {Encodings, RD, Cfg2}.
+
+content_types_provided(RD, Cfg) ->
+  {[
+      {"application/javascript",  serve},
+      {"application/ecmascript",  serve},
+      {"text/html",               serve},
+      {"text/css",                serve},
+      {"text/plain",              serve},
+      {"image/png",               serve},
+      {"image/jpeg",              serve},
+      {"image/gif",               serve},
+      {"image/svg+xml",           serve}
+    ], RD, Cfg}.
+
+last_modified(RD, Cfg) ->
+  Path = source_path(RD, Cfg),
+  case filelib:is_file(Path) of
+    true -> { filelib:last_modified(Path), RD, Cfg };
+    _ -> {undefined, RD, Cfg}
+  end.
+
+generate_etag(RD, Cfg) ->
+  Path = source_path(RD, Cfg),
+  case filelib:is_file(Path) of
+    true ->
+      {{Y, Mo, D},{H, Mn, S}} = filelib:last_modified(Path),
+      { io_lib:format("W/~w~w~w~w~w~w", [Y,Mo,D,H,Mn,S]), RD, Cfg };
+    _ -> {undefined, RD, Cfg}
+  end.
+
+serve(RD, Cfg=#config{root_dir=RootDir}) ->
+  Path = filename:join([RootDir, wrq:disp_path(RD)]),
+  case file:open(Path, [read, binary]) of
+    {ok, Io} ->
+      {
+        {stream, stream_next_chunk(Io)},
+        add_content_type(Path, add_xsendfile(Path, RD)),
+        Cfg
+      };
+    {error, _} ->
+      {
+        {halt, 404},
+        RD,
+        Cfg
+      }
+  end.
+
+%%Internal functions
 
 source_path(RD, #config{root_dir=RootDir}) ->
   filename:join([RootDir, wrq:disp_path(RD)]).
@@ -73,27 +127,10 @@ collect_encodings(RD, Cfg) ->
     {Cfg, [{"identity", fun(X) -> X end}]},
     [fun maybe_gzip/2, fun maybe_deflate/2]).
 
-encodings_provided(RD, Cfg) ->
-  {Cfg2, Encodings} = collect_encodings(RD, Cfg),
-  {Encodings, RD, Cfg2}.
-
 gzip(<<>>) ->
   <<>>;
 gzip(Content) ->
   zlib:gzip(Content).
-
-content_types_provided(RD, Cfg) ->
-  {[
-      {"application/javascript",  serve},
-      {"application/ecmascript",  serve},
-      {"text/html",               serve},
-      {"text/css",                serve},
-      {"text/plain",              serve},
-      {"image/png",               serve},
-      {"image/jpeg",              serve},
-      {"image/gif",               serve},
-      {"image/svg+xml",           serve}
-    ], RD, Cfg}.
 
 guess_mime(Ext) ->
   case mochiweb_mime:from_extension(Ext) of
@@ -122,21 +159,4 @@ stream_next_chunk(Io) ->
       {<<>>, done};
     {error, _} ->
       {<<>>, done}
-  end.
-
-serve(RD, Cfg=#config{root_dir=RootDir}) ->
-  Path = filename:join([RootDir, wrq:disp_path(RD)]),
-  case file:open(Path, [read, binary]) of
-    {ok, Io} ->
-      {
-        {stream, stream_next_chunk(Io)},
-        add_content_type(Path, add_xsendfile(Path, RD)),
-        Cfg
-      };
-    {error, _} ->
-      {
-        {halt, 404},
-        RD,
-        Cfg
-      }
   end.
