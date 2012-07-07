@@ -10,10 +10,10 @@
 
 setup(_ParlorOpts, TableOpts) ->
   {X, Y} = proplists:get_value(board_size, TableOpts, {5,5}),
-  #board{
+  {ok, #board{
     features=build_features( proplists:get_value(with_features, TableOpts), {X,Y}),
-    dimensions=#coords{x=Y,y=Y}
-  }.
+    dimensions=#coords{x=X,y=Y}
+  }}.
 
 join(_Player, PlayerOpts, State) ->
   {ok, PlayerOpts, State}.
@@ -23,12 +23,11 @@ start_game(Players, State) when length(Players) > 0 ->
 start_game(_, _) ->
   {error, not_ready}.
 
-move(_Player, _PlayerOpts, {X,Y}, State) ->
+move(_Player, _PlayerOpts, MoveProps, State) ->
+  {X,Y} = parse_move(MoveProps),
   case do_move(X,Y,State) of
-    {ok, NewState} ->
-      {reply, {ok, NewState}, NewState};
-    Err = {error, _} ->
-      {reply, Err, State}
+    {ok, NewState} -> {ok, NewState};
+    Err = {error, _} -> Err
   end.
 
 finish_game(State=#board{moves=Moves}) when length(Moves) >= 5 ->
@@ -51,6 +50,11 @@ code_change(_OldVersion, State, _Extra) ->
   State.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%55
+
+parse_move(Proplist) ->
+  {X, []} = string:to_integer(proplists:get_value("x", Proplist)),
+  {Y, []} = string:to_integer(proplists:get_value("y", Proplist)),
+  {X, Y}.
 
 do_move(X, Y, Board=#board{moves=[]}) when ?SIZE_GUARD ->
   {ok, Board#board{moves=[{X,Y}]}};
