@@ -8,7 +8,7 @@
 %%%-------------------------------------------------------------------
 -module(two_grooves_custom_tags).
 %% API
--export([render_tree/2]).
+-export([render_tree/2, path_to/2, query_params/2]).
 %%%===================================================================
 %%% API
 %%%===================================================================
@@ -20,6 +20,22 @@ render_tree(Args, _Context) ->
   Tree = proplists:get_value(resource, Args),
   Name = proplists:get_value(name, Args, "resource"),
   render_tree({ValueTmpl, ListTmpl, DictTmpl}, Tree, Name).
+
+%% Usage: {% path_to dispatch=dispatch_list.<name> path_info=<path> %}
+path_to(Args, Context) ->
+  io:format("~p ~p~n", [Args, Context]),
+  {dispatches, Dispatches} = proplists:lookup(dispatches, Context),
+  {name, Name} = proplists:lookup(name, Args),
+  io:format("~p ~p~n", [Name, Dispatches]),
+  {Name, Dispatch} = proplists:lookup(Name, Dispatches),
+  PathInfo = proplists:delete(name, Args),
+  io:format("~p ~p~n", [Dispatch, PathInfo]),
+  [[<<"/">>, Part] || Part <- two_grooves_named_dispatch:zip_dispatch(Dispatch, PathInfo)].
+
+query_params(Args, _Context) ->
+  Params = proplists:get_value(params, Args),
+  [First | Rest ] = [[Key, <<"=">>, Value] || {Key, Value} <- Params],
+  [First | [[<<"&">>, Part] || Part <- Rest]].
 
 %%%===================================================================
 %%% Internal functions

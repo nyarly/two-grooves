@@ -6,11 +6,11 @@
 %%% @end
 %%% Created :  Sat May 26 12:22:31 2012 by Judson Lester
 %%%-------------------------------------------------------------------
--module(snake_game_soop).
+-module(game_soop).
 -behaviour(supervisor).
 
 %% API
--export([start_link/0, start_game/1]).
+-export([start_link/0, start_game/3]).
 
 %% Supervisor callbacks
 -export([init/1]).
@@ -24,8 +24,8 @@
 start_link() ->
   supervisor:start_link({local, ?SERVER}, ?MODULE, []).
 
-start_game(Size) ->
-  supervisor:start_child(?SERVER, [Size]).
+start_game(Rules, Parlor, Table) ->
+  supervisor:start_child(?SERVER, [Rules, Parlor, Table]).
 
 %%%===================================================================
 %%% Supervisor callbacks
@@ -44,8 +44,9 @@ init([]) ->
   Shutdown = 2000,
   Type = worker,
 
-  AChild = {snake_game, {snake_game, start_link, []},
-    Restart, Shutdown, Type, [snake_game]},
+  %% @todo Read the OTP Design Priciples re: 'dynamic' modules
+  AChild = {gen_game, {gen_game, start_link, []},
+    Restart, Shutdown, Type, [gen_game]},
 
   {ok, {SupFlags, [AChild]}}.
 

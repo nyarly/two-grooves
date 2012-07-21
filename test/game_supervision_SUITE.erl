@@ -6,7 +6,7 @@
 %%% @end
 %%% Created :  Thu Jun 14 20:46:41 2012 by Judson Lester
 %%%-------------------------------------------------------------------
--module(snake_game_supervision_SUITE).
+-module(game_supervision_SUITE).
 %% Note: This directive should only be used in test suites.
 -compile(export_all).
 -include_lib("common_test/include/ct.hrl").
@@ -49,13 +49,13 @@ all() ->
 %%--------------------------------------------------------------------
 
 start_top(_Config) ->
-  {ok, _} = snake_game_top:start_link(),
+  {ok, _} = game_top:start_link(),
   ok.
 
 start_manager(_Config) ->
-  {ok, _} = snake_game_manager:start_link(),
+  {ok, _} = game_manager:start_link(),
   ok.
 
 start_soop(_Config) ->
-  {ok, _} = snake_game_soop:start_link(),
+  {ok, _} = game_soop:start_link(),
   ok.

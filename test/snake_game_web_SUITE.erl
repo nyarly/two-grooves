@@ -19,41 +19,41 @@
 suite() ->
   [{timetrap,{minutes,10}}].
 init_per_suite(Config) ->
-  application:start(inets),
-  application:start(crypto),
-  application:start(mochiweb),
+  ok = two_grooves:start(),
   Config.
 end_per_suite(_Config) ->
-  application:stop(mochiweb),
-  application:stop(crypto),
-  application:stop(inets),
+  two_grooves:stop(),
   ok.
 
 init_per_group(_GroupName, Config) ->
+  bounce_game_top(),
   Config.
 
 end_per_group(_GroupName, _Config) ->
   ok.
 
 init_per_testcase(_TestCase, Config) ->
-  application:start(webmachine),
-  {ok, TopPid} = snake_game_top:start_link(),
   {ok, DispatchList} = application:get_env(webmachine, dispatch_list),
-  [ {top_pid, TopPid},
-    {dispatch_list, DispatchList}
-    | Config ].
+  [ {dispatch_list, DispatchList} | Config ].
 
 end_per_testcase(_TestCase, Config) ->
-  application:stop(webmachine),
-  exit(?config(top_pid, Config), normal),
   ok.
+
+bounce_game_top() ->
+  supervisor:terminate_child(two_grooves_sup, game_top),
+  case supervisor:restart_child(two_grooves_sup, game_top) of
+    {ok, _Child} -> ok;
+    {ok, _Child, _Info} -> ok;
+    {error, running} -> ok
+  end.
 
 groups() ->
   [
-    {web, [], [index_dispatches, play_a_game]}
+    {dispatches, [], [index_dispatches]},
+    {play_a_game, [sequence], [create_a_game, game_has_no_moves, make_a_move, game_has_one_move]}
   ].
 all() ->
-  [{group, web}].
+  [{group, dispatches}, {group, play_a_game}].
 
 %%--------------------------------------------------------------------
 %%Helpers
@@ -88,63 +88,57 @@ dispatch_request(DispatchList, RD) ->
   webmachine_dispatcher:dispatch(Host, Path, DispatchList, RD),
   {ExpectedModule, ExpectedOptions, wrq:load_dispatch_data(dict:from_list(Bindings),HostTokens,Port,PathTokens,AppRoot,StringPath, RD)}.
 
+setup_request(Request, TestConfig) ->
+  {Module, DispatchConfig, ReqData} = dispatch_request(?config(dispatch_list, TestConfig), Request),
+  {ok, Context} = Module:init(DispatchConfig),
+  {Module, ReqData, Context}.
+
 setup_GET(Path, Headers, Config) ->
-  {_Mod, _Options, RD} = dispatch_request(?config(dispatch_list, Config), build_request('GET', Path, Headers)),
-  RD.
+  setup_request(build_request('GET', Path, Headers), Config).
 
 setup_POST(Path, Headers, Body, Config) ->
-  {_Mod, _Options, RD} = dispatch_request(?config(dispatch_list, Config), build_request('POST', Path, Headers, Body)),
-  RD.
+  setup_request(build_request('POST', Path, Headers, Body), Config).
+
+examine_game(ExpectedMoves, ExpectedDims, ExpectedScore, Config) ->
+  {game_resource, SeeNewGame, Context} = setup_GET("snakegame/1/player1", [], Config),
+  GameResource = game_resource:to_resource(SeeNewGame, Context),
+  ct:pal("~p~n", [GameResource]),
+  ExpectedMoves = proplists:get_value(moves, GameResource),
+  ExpectedDims = proplists:get_value(dims, GameResource),
+  ExpectedScore = proplists:get_value(score, GameResource),
+  false = undefined =:= proplists:get_value(targets, GameResource).
 
 %%--------------------------------------------------------------------
 %% TEST CASES
 %%--------------------------------------------------------------------
 
-index_dispatches() ->
-  [].
 index_dispatches(Config) ->
-  RD = build_request('POST', "snakegame/", [], "width=5&height=5"),
-  {snakegames_resource, [], _RD2} = dispatch_request(?config(dispatch_list, Config), RD).
+  RD = build_request('POST', "snakegames/", [], "width=5&height=5"),
+  {games_resource, PropList, _RD2} = dispatch_request(?config(dispatch_list, Config), RD),
+  snakegame_rules = proplists:get_value(rules_module, PropList).
 
-play_a_game() ->
-  [].
-play_a_game(Config) ->
-  %That is:
-  %POST a new game
-  NewGameRequest = setup_POST("snakegame/", [], "width=5&height=5", Config),
-  {true, NewGameRequest, []} = snakegames_resource:post_is_create(NewGameRequest, []),
-  {NewPath, NewGameRequest, CreateContext} = snakegames_resource:create_path(NewGameRequest, []),
-  NewGameUpdate = wrq:set_disp_path(NewPath, NewGameRequest),
-  {AcceptedTypes, NewGameUpdate, CreateContext} = snakegames_resource:content_types_accepted(NewGameUpdate, CreateContext),
+create_a_game(Config) ->
+  {games_resource, NewGameRequest, Context} = setup_POST("snakegames/", [], "player=player1&width=5&height=5", Config),
+  {true, NewGameRequest, Context} = games_resource:post_is_create(NewGameRequest, Context),
+  {NewPath, ViewNewGameRequest, Context} = games_resource:create_path(NewGameRequest, Context),
+  NewGameUpdate = wrq:set_disp_path(NewPath, ViewNewGameRequest),
+  {AcceptedTypes, NewGameUpdate, Context} = games_resource:content_types_accepted(NewGameUpdate, Context),
   [from_www_form] = [ Fun || {Type, Fun} <- AcceptedTypes, "application/x-www-form-urlencoded" =:= Type],
-  %Response should redirect to the URL of the new game
-  {{respond, 303}, _RedirectedRequest, CreateContext} = snakegames_resource:from_www_form(NewGameUpdate, CreateContext),
+  {{respond, 303}, _RedirectedRequest, Context} = games_resource:from_www_form(NewGameUpdate, Context).
 
-  %GET from that URL
-  SeeNewGame = setup_GET("snakegame/1", [], Config),
-  GameResource = snakegame_resource:to_resource(SeeNewGame, []),
-  [] = proplists:get_value(moves, GameResource),
-  [{x,5},{y,5}] = proplists:get_value(dims, GameResource),
-  0 = proplists:get_value(score, GameResource),
-  false = undefined =:= proplists:get_value(targets, GameResource),
-  %That should be a game
-  %
-  MakeAMove = setup_POST("snakegame/1/moves", [], "x=3&y=3", Config),
-  {true, MakeAMove, []} = snakegame_moves_resource:post_is_create(MakeAMove, []),
-  {NewMovePath, MakeAMove, MoveContext} = snakegame_moves_resource:create_path(MakeAMove, []),
+game_has_no_moves(Config) ->
+  examine_game([], [{x,5},{y,5}], 0, Config).
+
+make_a_move(Config) ->
+  ct:pal("~p~n", [?config(dispatch_list, Config)]),
+  {game_moves_resource, MakeAMove, Context} = setup_POST("snakegame/1/player1/moves", [], "x=3&y=3", Config),
+  {true, MakeAMove, Context} = game_moves_resource:post_is_create(MakeAMove, Context),
+  {NewMovePath, MakeAMove, Context} = game_moves_resource:create_path(MakeAMove, Context),
   MadeAMove = wrq:set_disp_path(NewMovePath, MakeAMove),
-
-  {AcceptedMoveTypes, MadeAMove, MoveContext} = snakegame_moves_resource:content_types_accepted(MadeAMove, MoveContext),
+  {AcceptedMoveTypes, MadeAMove, Context} = game_moves_resource:content_types_accepted(MadeAMove, Context),
   [from_www_form] = [ Fun || {Type, Fun} <- AcceptedMoveTypes, "application/x-www-form-urlencoded" =:= Type],
-  %Response should redirect to the URL of the new game
-  {{respond, 303}, _RedirectedRequest2, MoveContext} = snakegame_moves_resource:from_www_form(MadeAMove, MoveContext),
-
-  %GET from that URL
-  SeeGame = setup_GET("snakegame/1", [], Config),
-  MovedGameResource = snakegame_resource:to_resource(SeeGame, []),
-  [[{x,3},{y,3}]] = proplists:get_value(moves, MovedGameResource),
-  [{x,5},{y,5}] = proplists:get_value(dims, MovedGameResource),
-  0 = proplists:get_value(score, MovedGameResource),
-  false = undefined =:= proplists:get_value(targets, MovedGameResource),
-
+  {{respond, 303}, _RedirectedRequest2, MoveContext} = game_moves_resource:from_www_form(MadeAMove, Context),
   ok.
+
+game_has_one_move(Config) ->
+  examine_game([[{x,3},{y,3}]], [{x,5},{y,5}], 0, Config).

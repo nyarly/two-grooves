@@ -1,17 +1,26 @@
 -module(snakegame_rules).
 -behavior(gen_game).
 
--export([setup/2, join/3, start_game/2, move/4, finish_game/1, board_proplist/3, scores/2, code_change/3]).
+-export([options_format/1, setup/2, join/3, start_game/2, move/4, finish_game/1, board_proplist/3, scores/2, code_change/3]).
 
 -record(coords, {x, y}).
 -record(board, {moves=[], features=[], dimensions=#coords{x=5,y=5}}).
 
 -define(SIZE_GUARD, X > 0, X =< Board#board.dimensions#coords.x, Y > 0, Y =< Board#board.dimensions#coords.y).
 
-setup(_ParlorOpts, TableOpts) ->
-  {X, Y} = proplists:get_value(board_size, TableOpts, {5,5}),
+options_format(table) ->
+  [ {width, integer, 5},
+    {height, integer, 5},
+    {with_features, identity, undefined} ];
+options_format(player) ->
+  [];
+options_format(move) ->
+  [ {x, integer, undefined},
+    {y, integer, undefined} ].
+
+setup(_ParlorOpts, [X, Y, Features]) ->
   {ok, #board{
-    features=build_features( proplists:get_value(with_features, TableOpts), {X,Y}),
+    features=build_features( Features, {X,Y}),
     dimensions=#coords{x=X,y=Y}
   }}.
 
@@ -23,8 +32,7 @@ start_game(Players, State) when length(Players) > 0 ->
 start_game(_, _) ->
   {error, not_ready}.
 
-move(_Player, _PlayerOpts, MoveProps, State) ->
-  {X,Y} = parse_move(MoveProps),
+move(_Player, _PlayerOpts, [X,Y], State) ->
   case do_move(X,Y,State) of
     {ok, NewState} -> {ok, NewState};
     Err = {error, _} -> Err
@@ -50,11 +58,6 @@ code_change(_OldVersion, State, _Extra) ->
   State.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%55
-
-parse_move(Proplist) ->
-  {X, []} = string:to_integer(proplists:get_value("x", Proplist)),
-  {Y, []} = string:to_integer(proplists:get_value("y", Proplist)),
-  {X, Y}.
 
 do_move(X, Y, Board=#board{moves=[]}) when ?SIZE_GUARD ->
   {ok, Board#board{moves=[{X,Y}]}};

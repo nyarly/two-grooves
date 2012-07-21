@@ -11,7 +11,7 @@
 -export([start_link/3, start/3, current_state/1, to_proplist/2, join/3, move/3, score/1, quit/1]).
 
 behaviour_info(callbacks) ->
-  [{setup, 2}, {join, 3}, {move, 4}, {scores, 2}, {start_game, 2}, {finish_game, 1}, {board_proplist, 3}, {code_change, 3}];
+  [{options_format,1}, {setup, 2}, {join, 3}, {move, 4}, {scores, 2}, {start_game, 2}, {finish_game, 1}, {board_proplist, 3}, {code_change, 3}];
 behaviour_info(_) ->
   undefined.
 
@@ -34,6 +34,34 @@ behaviour_info(_) ->
 
 -record(game, {rules, players=[], board}).
 
+%% gen_fsm wrappers
+
+start_link(RulesModule, ParlorOpts, TableOpts) ->
+  gen_fsm:start_link(?MODULE, {RulesModule, ParlorOpts, TableOpts}, []).
+
+start(RulesModule, ParlorOpts, TableOpts) ->
+  gen_fsm:start(?MODULE, {RulesModule, ParlorOpts, TableOpts}, []).
+
+current_state(Game) ->
+  gen_fsm:sync_send_all_state_event(Game, current_state).
+
+to_proplist(Game, Player) ->
+  gen_fsm:sync_send_event(Game, {proplist, Player}).
+
+join(Game, Player, PlayerOpts) ->
+  gen_fsm:sync_send_event(Game, {join, Player, PlayerOpts}).
+
+move(Game, Player, Move) ->
+  gen_fsm:sync_send_event(Game, {move, Player, Move}).
+
+score(Game) ->
+  gen_fsm:sync_send_event(Game, score).
+
+quit(Game) ->
+  gen_fsm:sync_send_all_state_event(Game, quit).
+
+%%% gen_fsm callbacks
+
 init({RulesModule, ParlorOpts, TableOpts}) ->
   case RulesModule:setup(ParlorOpts, TableOpts) of
     {ok, State} -> {ok, lobby, #game{ rules=RulesModule, board=State } };
@@ -43,11 +71,11 @@ init({RulesModule, ParlorOpts, TableOpts}) ->
 handle_event(_Event, _StateName, StateData) ->
   {stop, error, StateData}.
 
-handle_sync_event(quit, _StateName, _From, StateData) ->
+handle_sync_event(quit, _From, _StateName, StateData) ->
   {stop, normal, ok, StateData};
-handle_sync_event(current_state, StateName, _From, StateData) ->
+handle_sync_event(current_state, _From, StateName, StateData) ->
   {reply, StateName, StateName, StateData};
-handle_sync_event(_Event, _StateName, _From, StateData) ->
+handle_sync_event(_Event, _From, _StateName, StateData) ->
   {stop, error, error, StateData}.
 
 
@@ -72,7 +100,7 @@ lobby({proplist, Player}, _From, State) ->
 lobby(score, _From, State) ->
   {reply, {error, not_started}, lobby, State};
 lobby({move, _, _}, _From, State) ->
-  {reply, {error, bad_state}, lobby, State};
+  {reply, {error, {bad_state, move, lobby}}, lobby, State};
 lobby(_, _, State) ->
   {stop, error, error, State}.
 
@@ -95,11 +123,11 @@ playing({move, Player, Move}, _From, State) ->
         end
     end);
 playing({proplist, Player}, _From, State) ->
-  get_proplist(Player, State, finished);
+  get_proplist(Player, State, playing);
 playing(score, _From, State) ->
   get_score(State);
 playing({join,_,_}, _From, State) ->
-  {reply, {error, bad_state}, playing, State};
+  {reply, {error, {bad_state, join, playing}}, playing, State};
 playing(_, _, State) ->
   {stop, {error, invalid_input}, error, State}.
 
@@ -112,9 +140,9 @@ finished({proplist, Player}, _From, State) ->
 finished(score, _From, State) ->
   get_score(State);
 finished({move,_,_}, _From, State) ->
-  {reply, {error, bad_state}, finished, State};
+  {reply, {error, {bad_state, move, finished}}, finished, State};
 finished({join,_,_}, _From, State) ->
-  {reply, {error, bad_state}, finished, State};
+  {reply, {error, {bad_state, join, finished}}, finished, State};
 finished(_, _, State) ->
   {stop, {error, invalid_input}, error, State}.
 
@@ -158,29 +186,3 @@ get_proplist(Player, State, StateName) ->
 build_proplist(State, GameProplist) ->
   [ { players, State#game.players }
     | GameProplist ].
-
-%% gen_fsm wrappers
-
-start_link(RulesModule, ParlorOpts, TableOpts) ->
-  gen_fsm:start_link(?MODULE, {RulesModule, ParlorOpts, TableOpts}, []).
-
-start(RulesModule, ParlorOpts, TableOpts) ->
-  gen_fsm:start(?MODULE, {RulesModule, ParlorOpts, TableOpts}, []).
-
-current_state(Game) ->
-  gen_fsm:sync_send_all_state_event(Game, current_state).
-
-to_proplist(Game, Player) ->
-  gen_fsm:sync_send_event(Game, {proplist, Player}).
-
-join(Game, Player, PlayerOpts) ->
-  gen_fsm:sync_send_event(Game, {join, Player, PlayerOpts}).
-
-move(Game, Player, Move) ->
-  gen_fsm:sync_send_event(Game, {move, Player, Move}).
-
-score(Game) ->
-  gen_fsm:sync_send_event(Game, score).
-
-quit(Game) ->
-  gen_fsm:sync_send_all_state_event(Game, quit).
