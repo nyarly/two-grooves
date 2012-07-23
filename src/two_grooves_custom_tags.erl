@@ -21,16 +21,17 @@ render_tree(Args, _Context) ->
   Name = proplists:get_value(name, Args, "resource"),
   render_tree({ValueTmpl, ListTmpl, DictTmpl}, Tree, Name).
 
-%% Usage: {% path_to dispatch=dispatch_list.<name> path_info=<path> %}
+%% Usage: {% path_to name=<name> <path_info_args> %}
 path_to(Args, Context) ->
-  io:format("~p ~p~n", [Args, Context]),
+  io:format("Args: ~p Context: ~p~n", [Args, Context]),
   {dispatches, Dispatches} = proplists:lookup(dispatches, Context),
   {name, Name} = proplists:lookup(name, Args),
-  io:format("~p ~p~n", [Name, Dispatches]),
-  {Name, Dispatch} = proplists:lookup(Name, Dispatches),
+  io:format("Name: ~p Dispatches: ~p~n", [Name, Dispatches]),
   PathInfo = proplists:delete(name, Args),
-  io:format("~p ~p~n", [Dispatch, PathInfo]),
-  [[<<"/">>, Part] || Part <- two_grooves_named_dispatch:zip_dispatch(Dispatch, PathInfo)].
+
+  {Name, Dispatch} = proplists:lookup(Name, Dispatches),
+  io:format("Dispatch: ~p PathInfo: ~p~n", [Dispatch, PathInfo]),
+  two_grooves_named_dispatch:zip_dispatch(Dispatch, PathInfo).
 
 query_params(Args, _Context) ->
   Params = proplists:get_value(params, Args),

@@ -12,7 +12,7 @@ Games of Snake Game available for play and review:
 </ul>
 
 <p>Start a new game:</p>
-<form action="{% path_to name=paths.single %}" method="post">
+<form action="{% path_to name=paths.list %}" method="post">
   <input type="text" name="width" value="5" />
   <input type="text" name="height" value="5" />
   <input type="submit" class="submit" value="submit" name="button" />

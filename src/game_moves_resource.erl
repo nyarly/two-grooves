@@ -12,8 +12,7 @@
 -include("include/game_resource.hrl").
 
 init(Config) ->
-  [RulesModule, ParlorOpts, ResourceOpts] = [proplists:get_value(Field, Config) || Field <- [rules_module, parlor_opts, resource_opts]],
-  {ok, #game_context{rules=RulesModule, parlor=ParlorOpts, resource=ResourceOpts}}.
+  game_resource_common:init(Config).
 
 allowed_methods(ReqData, Context) ->
   {['POST','PUT'], ReqData, Context}.
@@ -36,7 +35,8 @@ from_www_form(ReqData, Context) ->
   Move = two_grooves_util:decode_query((Context#game_context.rules):options_format(move), Params),
   case gen_game:move(Game, Player, Move) of
     {ok, _} ->
-      {{respond, 303}, wrq:set_resp_header("Location", io_lib:format("/snakegame/~s",[wrq:path_info(id, ReqData)]), ReqData), Context};
+      GamePath = game_resource_common:build_path(single, Context, [{Field, wrq:path_info(Field, ReqData)} || Field <- [id, player]]),
+      {{respond, 303}, wrq:set_resp_header("Location", GamePath, ReqData), Context};
     {error, Error} ->
       {{halt, 400}, invalid_move(Error, ReqData), Context}
   end.

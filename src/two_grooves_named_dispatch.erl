@@ -20,13 +20,13 @@
 
 wm_dispatches(NamedDispatches) ->
   DispatchProplist = to_proplist(NamedDispatches),
-  [dispatch_part(Dispatch, NamedDispatches) || Dispatch <- NamedDispatches].
+  [dispatch_part(Dispatch, DispatchProplist) || Dispatch <- NamedDispatches].
 
 to_proplist(NamedDispatches) ->
   [{name_part(Dispatch), path_part(Dispatch)} || Dispatch <- NamedDispatches].
 
 zip_dispatch(Path, PathInfo) ->
-  zip_path(Path, PathInfo, []).
+  [[<<"/">>, Part] || Part <- zip_path(Path, PathInfo, [])].
 
 %%%===================================================================
 %%% Internal functions

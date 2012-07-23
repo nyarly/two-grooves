@@ -1,6 +1,6 @@
 {% extends "base.dtl" %}
 {% block profile %}http://madhelm.net/http-profiles/boardgame{% endblock %}
-{% block title %}Two Grooves - A Snake Game{% endblock %}
+{% block title %}Two Grooves - A Game{% endblock %}
 {% block head %}
 <meta name="resource-json" content='{{json}}' />
 <script type="text/javascript" src="/js/jquery-1.7.2.js"></script>
@@ -12,14 +12,15 @@
 
 {% block body %}
 <div id="interface">
-  <h3><a rel='index' href="/snakegame/">Snake Game List</a></h3>
+  <h3><a rel='index' href="{% path_to name=paths.list %}">Game List</a></h3>
   <object id="html-board" data="/assets/html/snakegame_board.html" type="text/html" onload="configureBoard()">
-    <h3><a rel='self' href="/snakegame/{{ game.id }}">Snake Game #{{ game.id }}</a></h3>
+    <h3><a rel='self' href="{% path_to name=paths.single id=game.id player=game.player %}">
+        Game #{{ resource.game.id }}</a></h3>
 
     {% render_tree values="simple_value_dtl" lists="list_to_ol_dtl" dicts="dict_to_dl_dtl" resource=game name="game" %}
 
     <h3>Make a move:</h3>
-    <form id="make-move" action="/snakegame/{{game.id}}/moves" method="post">
+    <form id="make-move" action="{% path_to name=paths.move id=game.id player=game.player %}" method="post">
       <input type="text" name="x" value="" />
       <input type="text" name="y" value="" />
       <input type="submit" class="submit" value="submit" name="submit" />

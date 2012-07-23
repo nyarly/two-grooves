@@ -56,13 +56,12 @@ init([]) ->
 
   WMDispatch = two_grooves_named_dispatch:wm_dispatches(Dispatch),
 
-  TemplateDispatch = two_grooves_named_dispatch:to_proplist(Dispatch),
-
   WebConfig = [
     {ip, Ip},
     {port, 8000},
     {log_dir, "priv/log"},
     {dispatch, WMDispatch}],
+  io:format("Web Config: ~p~n", [WebConfig]),
   Web = {webmachine_mochiweb,
     {webmachine_mochiweb, start, [WebConfig]},
     permanent, 5000, worker, [mochiweb_socket_server]},

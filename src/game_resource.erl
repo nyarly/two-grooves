@@ -11,16 +11,21 @@
 -include_lib("webmachine/include/webmachine.hrl").
 -include("include/game_resource.hrl").
 
+
 init(Config) ->
-  [RulesModule, ParlorOpts, ResourceOpts] = [proplists:get_value(Field, Config) || Field <- [rules_module, parlor_opts, resource_opts]],
-  {ok, #game_context{rules=RulesModule, parlor=ParlorOpts, resource=ResourceOpts}}.
+  game_resource_common:init(Config).
 
 to_resource(ReqData, Context) ->
   {Index, []} = string:to_integer(wrq:path_info(id, ReqData)),
   Player = wrq:path_info(player, ReqData),
   {ok, Game} = game_manager:find_game(Index),
   {ok, Proplist} = gen_game:to_proplist(Game, Player),
-  [{id, Index} | Proplist] ++ Context.
+  [
+    {id, Index},
+    {player, Player},
+    {parlor_opts, Context#game_context.parlor},
+    {resource_opts, Context#game_context.resource}
+    | Proplist].
 
 content_types_provided(ReqData, Context) ->
   List = [
@@ -34,5 +39,4 @@ to_json(ReqData, Context) ->
 
 to_html(ReqData, Context) ->
   {Json, _ReqData, _Context} = to_json(ReqData, Context),
-  {ok, Result} = game_html_dtl:render([{json, Json}, {game, to_resource(ReqData, Context)}]),
-  {Result, ReqData, Context}.
+  {game_resource_common:render(game_html_dtl, [{json, Json}, {game, to_resource(ReqData, Context)}], Context), ReqData, Context}.

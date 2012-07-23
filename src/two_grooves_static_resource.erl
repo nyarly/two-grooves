@@ -9,7 +9,8 @@
 
 %%Resource API functions
 
-init([RootDir]) ->
+init(Config) ->
+  {root_dir, RootDir} = proplists:lookup(root_dir, Config),
   {ok, #config{root_dir=RootDir}}.
 
 resource_exists(RD, Cfg) ->

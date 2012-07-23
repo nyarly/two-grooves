@@ -12,9 +12,7 @@
 -include("include/game_resource.hrl").
 
 init(Config) ->
-  [RulesModule, ParlorOpts, ResourceOpts, Paths, Dispatches] =
-  [proplists:get_value(Field, Config) || Field <- [rules_module, parlor_opts, resource_opts, paths, dispatches]],
-  {ok, #game_context{rules=RulesModule, parlor=ParlorOpts, resource=ResourceOpts, paths=Paths, tag_context=[{dispatches, Dispatches}]}}.
+  game_resource_common:init(Config).
 
 allowed_methods(ReqData, Context) ->
   {['GET', 'POST', 'HEAD'], ReqData, Context}.
@@ -41,7 +39,8 @@ from_www_form(ReqData, Context) ->
       PlayerOpts = two_grooves_util:decode_query(Rules:options_format(player), Params),
       {ok, NewGame} = game_manager:create_game(TargetId, Rules, ParlorOpts, TableOpts),
       {ok, _} = gen_game:join(NewGame, Player, PlayerOpts),
-      {{respond, 303}, ReqData, Context}
+      SeeGamePath = game_resource_common:build_path(single, Context, [{player, Player}, {id, TargetId}]),
+      {{respond, 303}, wrq:set_resp_header("Location", SeeGamePath, ReqData), Context}
   end.
 
 to_resource(_ReqData, Context) ->
@@ -52,7 +51,4 @@ to_resource(_ReqData, Context) ->
     {resource_opts, Context#game_context.resource}].
 
 to_html(ReqData, Context) ->
-  {ok, Result} = games_html_dtl:render(
-    [{paths, Context#game_context.paths}, {resource, to_resource(ReqData, Context)}],
-    [{custom_tags_context, Context#game_context.tag_context}]),
-  {Result, ReqData, Context}.
+  {game_resource_common:render(games_html_dtl, [{resource, to_resource(ReqData, Context)}], Context), ReqData, Context}.

@@ -7,7 +7,7 @@
 
 -include_lib("webmachine/include/webmachine.hrl").
 
-init([]) -> {ok, undefined}.
+init(_) -> {ok, undefined}.
 
 to_resource(_ReqData, _State) ->
   [].

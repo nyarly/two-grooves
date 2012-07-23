@@ -42,11 +42,15 @@ end_per_testcase(_TestCase, _Config) ->
   ok.
 
 all() ->
-  [start_top, start_manager, start_soop].
+  [start_two_grooves_sup, start_top, start_manager, start_soop].
 
 %%--------------------------------------------------------------------
 %% TEST CASES
 %%--------------------------------------------------------------------
+
+start_two_grooves_sup(_Config) ->
+  {ok, _} = two_grooves_sup:start_link(),
+  ok.
 
 start_top(_Config) ->
   {ok, _} = game_top:start_link(),

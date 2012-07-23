@@ -38,7 +38,12 @@ build_dispatch(ListPath, SinglePath, BaseResourceArgs) ->
   SingleName = list_to_atom(SinglePath),
   MoveName = list_to_atom(SinglePath ++ "_move"),
   JoinName = list_to_atom(SinglePath ++ "_join"),
-  DispatchNames = [{list, ListName}, {single, SingleName}, {move, MoveName}, {join, JoinName}],
+  DispatchNames = [
+    {list, atom_to_binary(ListName, latin1)},
+    {single, atom_to_binary(SingleName, latin1)},
+    {move, atom_to_binary(MoveName, latin1)},
+    {join, atom_to_binary(JoinName, latin1)}
+  ],
   ResourceArgs = [{paths, DispatchNames} | BaseResourceArgs],
   [ {ListName, [ListPath], games_resource, ResourceArgs },
     {SingleName, [SinglePath, id, player], game_resource, ResourceArgs },

@@ -47,14 +47,6 @@ bounce_game_top() ->
     {error, running} -> ok
   end.
 
-groups() ->
-  [
-    {dispatches, [], [index_dispatches]},
-    {play_a_game, [sequence], [create_a_game, game_has_no_moves, make_a_move, game_has_one_move]}
-  ].
-all() ->
-  [{group, dispatches}, {group, play_a_game}].
-
 %%--------------------------------------------------------------------
 %%Helpers
 %%--------------------------------------------------------------------
@@ -102,20 +94,35 @@ setup_POST(Path, Headers, Body, Config) ->
 examine_game(ExpectedMoves, ExpectedDims, ExpectedScore, Config) ->
   {game_resource, SeeNewGame, Context} = setup_GET("snakegame/1/player1", [], Config),
   GameResource = game_resource:to_resource(SeeNewGame, Context),
-  ct:pal("~p~n", [GameResource]),
+  ct:pal("Game: ~p~n", [GameResource]),
   ExpectedMoves = proplists:get_value(moves, GameResource),
   ExpectedDims = proplists:get_value(dims, GameResource),
   ExpectedScore = proplists:get_value(score, GameResource),
-  false = undefined =:= proplists:get_value(targets, GameResource).
+  false = undefined =:= proplists:get_value(targets, GameResource),
+  {HTML, SeeNewGame, Context} = game_resource:to_html(SeeNewGame, Context),
+  true = is_list(HTML).
 
 %%--------------------------------------------------------------------
 %% TEST CASES
 %%--------------------------------------------------------------------
 
+groups() ->
+  [
+    {dispatches, [], [index_dispatches]},
+    {play_a_game, [sequence], [create_a_game, game_has_no_moves, make_a_move, game_has_one_move]}
+  ].
+all() ->
+  [index_renders, {group, dispatches}, {group, play_a_game}].
+
 index_dispatches(Config) ->
   RD = build_request('POST', "snakegames/", [], "width=5&height=5"),
   {games_resource, PropList, _RD2} = dispatch_request(?config(dispatch_list, Config), RD),
   snakegame_rules = proplists:get_value(rules_module, PropList).
+
+index_renders(Config) ->
+  {games_resource, ViewListRequest, Context} = setup_GET("snakegames/", [], Config),
+  {HTML, ViewListRequest, Context} = games_resource:to_html(ViewListRequest, Context),
+  true = is_list(HTML).
 
 create_a_game(Config) ->
   {games_resource, NewGameRequest, Context} = setup_POST("snakegames/", [], "player=player1&width=5&height=5", Config),
@@ -130,7 +137,6 @@ game_has_no_moves(Config) ->
   examine_game([], [{x,5},{y,5}], 0, Config).
 
 make_a_move(Config) ->
-  ct:pal("~p~n", [?config(dispatch_list, Config)]),
   {game_moves_resource, MakeAMove, Context} = setup_POST("snakegame/1/player1/moves", [], "x=3&y=3", Config),
   {true, MakeAMove, Context} = game_moves_resource:post_is_create(MakeAMove, Context),
   {NewMovePath, MakeAMove, Context} = game_moves_resource:create_path(MakeAMove, Context),
