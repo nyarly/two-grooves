@@ -1,6 +1,6 @@
 <dl class="{{name}}">
   {% for key, value in resource %}
-  <dt class="{{ key }}">{{ key }}</dt>
-  <dd>{{value}}</dd>
+  <dt>{{ key }}</dt>
+  <dd class="{{ key }}">{{value}}</dd>
   {% endfor %}
 </dl>

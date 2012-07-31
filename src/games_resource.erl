@@ -46,7 +46,7 @@ from_www_form(ReqData, Context) ->
 to_resource(_ReqData, Context) ->
   {ok, Games} = game_manager:list_games(),
   [ {player, "player"},
-    {games, [[{id, Id}] || Id <- Games]},
+    {games, [[{id, Id}, {players, gen_game:players(Game)}, {state, gen_game:current_state(Game)}] || {Id, Game} <- Games]},
     {parlor_opts, Context#game_context.parlor},
     {resource_opts, Context#game_context.resource}].
 

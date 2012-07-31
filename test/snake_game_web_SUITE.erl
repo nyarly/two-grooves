@@ -109,7 +109,7 @@ examine_game(ExpectedMoves, ExpectedDims, ExpectedScore, Config) ->
 groups() ->
   [
     {dispatches, [], [index_dispatches]},
-    {play_a_game, [sequence], [create_a_game, game_has_no_moves, make_a_move, game_has_one_move]}
+    {play_a_game, [sequence], [create_a_game, game_has_no_moves, make_a_move, game_has_one_move, index_renders]}
   ].
 all() ->
   [index_renders, {group, dispatches}, {group, play_a_game}].

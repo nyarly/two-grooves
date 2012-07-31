@@ -1,6 +1,4 @@
-BoardInterface.bindDocumentTo(function(){
-    var snakeGameInterface = new BoardInterface()
-
+BoardInterface.bindDocumentTo(function(snakeGameInterface){
     snakeGameInterface.targetOffset = function(axis, square){
       var board = this
       return function(data) {
@@ -54,7 +52,7 @@ BoardInterface.bindDocumentTo(function(){
           return glyphs.square.gridOffset("y", d.y, glyphs.square)
         }).
       on("click", function(d){
-          board.callbacks.sendMove(d)
+          board.server.sendMove(d)
         })
 
 
@@ -100,6 +98,4 @@ BoardInterface.bindDocumentTo(function(){
 
       d3.select('#layer1').remove()
     }
-
-    return snakeGameInterface
   })

@@ -8,7 +8,7 @@
 %% @todo replace_player
 -export([lobby/2, lobby/3, playing/2, playing/3, finished/2, finished/3]).
 %% Convenience
--export([start_link/3, start/3, current_state/1, to_proplist/2, join/3, move/3, score/1, quit/1]).
+-export([start_link/3, start/3, current_state/1, players/1, to_proplist/2, join/3, move/3, score/1, quit/1]).
 
 behaviour_info(callbacks) ->
   [{options_format,1}, {setup, 2}, {join, 3}, {move, 4}, {scores, 2}, {start_game, 2}, {finish_game, 1}, {board_proplist, 3}, {code_change, 3}];
@@ -42,6 +42,9 @@ start_link(RulesModule, ParlorOpts, TableOpts) ->
 start(RulesModule, ParlorOpts, TableOpts) ->
   gen_fsm:start(?MODULE, {RulesModule, ParlorOpts, TableOpts}, []).
 
+players(Game) ->
+  gen_fsm:sync_send_all_state_event(Game, player_list).
+
 current_state(Game) ->
   gen_fsm:sync_send_all_state_event(Game, current_state).
 
@@ -73,6 +76,8 @@ handle_event(_Event, _StateName, StateData) ->
 
 handle_sync_event(quit, _From, _StateName, StateData) ->
   {stop, normal, ok, StateData};
+handle_sync_event(player_list, _From, StateName, StateData) ->
+  {reply, proplists:get_keys(StateData#game.players), StateName, StateData};
 handle_sync_event(current_state, _From, StateName, StateData) ->
   {reply, StateName, StateName, StateData};
 handle_sync_event(_Event, _From, _StateName, StateData) ->

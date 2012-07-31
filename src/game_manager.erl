@@ -30,6 +30,9 @@ create_game(Id, Rules, Parlor, Table) ->
 find_game(Index) ->
   gen_server:call(?SERVER, {find_game, Index}).
 
+list_game_ids() ->
+  gen_server:call(?SERVER, {list_game_ids}).
+
 list_games() ->
   gen_server:call(?SERVER, {list_games}).
 
@@ -61,8 +64,10 @@ handle_call({find_game, Index}, _From, State = #state{games=Games}) ->
     _:_ ->
       {reply, {error, not_found}, State}
   end;
-handle_call({list_games}, _From, State) ->
+handle_call({list_game_ids}, _From, State) ->
   {reply, {ok, gb_trees:keys(State#state.games)}, State};
+handle_call({list_games}, _From, State) ->
+  {reply, {ok, gb_trees:to_list(State#state.games)}, State};
 handle_call({reset_games}, _From, State) ->
   ok = loop_games(gb_trees:iterator(State#state.games),
     fun(_Key,Game) -> supervisor:terminate_child(game_soop, Game) end ),
